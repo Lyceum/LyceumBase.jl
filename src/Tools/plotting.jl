@@ -26,6 +26,11 @@ function expplot(
     normalize = false,
     maxpoints = typemax(Int),
 )
+    isbad = any(lines) do l
+        any(v->isnan(v) || isinf(v), l.x)
+        any(v->isnan(v) || isinf(v), l.y)
+    end
+    isbad && throw(ArgumentError("NaN or Inf detected"))
 
 
     xmax = maximum(l -> maximum(l.x), lines)

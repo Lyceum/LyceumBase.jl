@@ -83,6 +83,8 @@ macro forwardfield(ex, fs)
     )
 end
 
+isnaninf(x::Number) = isinf(x) || isnan(x)
+
 function namedtuplify(x)
     names = fieldnames(typeof(x))
     NamedTuple{names}(getfield(x, n) for n in names)

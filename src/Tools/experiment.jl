@@ -56,7 +56,7 @@ end
 
 Base.getindex(exp::Experiment, name::Symbol) = getindex(exp.file, _handlecollision(exp.file, name))
 function Base.setindex!(exp::Experiment, value, name::Symbol)
-    setindex(exp.file, value, _handlecollision(exp.file, name))
+    setindex!(exp.file, value, _handlecollision(exp.file, name))
 end
 
 
