@@ -103,11 +103,11 @@ function _threadsample!(actionfn!::F, resetfn!::G, sampler, nsamples, Hmax) wher
     trajlength = n = 0
     while n < nsamples
         rolloutstep!(actionfn!, traj, env)
-        envdone = isdone(env)
+        done = isdone(env)
         trajlength += 1
 
-        if envdone || trajlength == Hmax
-            terminate!(term, env, trajlength, envdone)
+        if done || trajlength == Hmax
+            terminate!(term, env, trajlength, done)
             resetfn!(env)
             n += trajlength
             trajlength = 0
@@ -142,11 +142,11 @@ function _threadsample!(
             break
         elseif atomiccount[] + trajlength >= nsamples
             Threads.atomic_add!(atomiccount, trajlength)
-            terminate!(term, env, trajlength, envdone)
+            terminate!(term, env, trajlength, done)
             break
         elseif done || trajlength == Hmax
             Threads.atomic_add!(atomiccount, trajlength)
-            terminate!(term, env, trajlength, envdone)
+            terminate!(term, env, trajlength, done)
             resetfn!(env)
             trajlength = 0
         end
