@@ -187,7 +187,7 @@ uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [[Shapes]]
 deps = ["Adapt", "Random", "Requires", "StaticArrays"]
-path = "/home/colinxs/workspace/juliadev/Shapes"
+git-tree-sha1 = "8fb16851e8cb3ea28a3446e024cd47fb0d2e9c4d"
 uuid = "175de200-b73b-11e9-28b7-9b5b306cec37"
 version = "0.1.0"
 
@@ -261,7 +261,7 @@ version = "1.1.0"
 
 [[UniversalLogger]]
 deps = ["Logging", "PushVectors"]
-path = "/home/colinxs/workspace/juliadev/UniversalLogger"
+git-tree-sha1 = "1e57536d596f90ff2d691012f68483705714beea"
 uuid = "5c5e3362-9445-4819-9f95-51c44c51adeb"
 version = "0.1.0"
 
