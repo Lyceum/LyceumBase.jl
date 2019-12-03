@@ -136,7 +136,6 @@ function _threadsample!(
     trajlength = 0
     while true
         done = rolloutstep!(actionfn!, traj, env)
-        #envdone = isdone(env)
         trajlength += 1
 
         if atomiccount[] >= nsamples
@@ -145,7 +144,7 @@ function _threadsample!(
             Threads.atomic_add!(atomiccount, trajlength)
             terminate!(term, env, trajlength, envdone)
             break
-        elseif envdone || trajlength == Hmax
+        elseif done || trajlength == Hmax
             Threads.atomic_add!(atomiccount, trajlength)
             terminate!(term, env, trajlength, envdone)
             resetfn!(env)
