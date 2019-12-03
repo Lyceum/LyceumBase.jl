@@ -27,6 +27,7 @@ UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
 
 [compat]
 julia = "1.3"
+JLSO = "1.3"
 
 [extras]
 KahanSummation = "8e2b3108-d4c1-50be-a7a2-16352aec75c3"
