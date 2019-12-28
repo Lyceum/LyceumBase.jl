@@ -4,7 +4,7 @@
 
 This is where `AbstractEnv` is specified for the Lyceum framework. It provides a set of functions that can be future specialzed for different physics engines or other MDP-centric problem setups.
 
-### Functions
+# Functions
 
 ```julia
   statespace(env::AbstractEnv)
