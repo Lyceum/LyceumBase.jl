@@ -69,7 +69,13 @@ end
 end
 
 @testset "NestedView M = $M, N=$N" for M in 0:3, N in 0:3, U in (Float64, Int)
-    T = SpecialArrays.viewtype(randflat(U, Val(M+N)), Val(M), Val(N))
+    # TODO https://github.com/JuliaArrays/StaticArrays.jl/issues/705
+    if M == N == 0
+        @test_skip false
+        continue
+    end
+
+    T = SpecialArrays._nested_viewtype(randflat(U, Val(M+N)), Val(M), Val(N))
     L = M + N
 
     @testset "constructors" begin

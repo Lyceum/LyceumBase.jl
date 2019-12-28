@@ -24,7 +24,7 @@ end
 
 @inline function NestedView{M}(parent::P) where {M,P} # TODO test
     N = sub(Val(ndims(P)), Val(M))
-    T = viewtype(parent, Val(M), Val(N))
+    T = _nested_viewtype(parent, Val(M), Val(N))
     NestedView{M,T,N,P}(parent)
 end
 
@@ -163,7 +163,7 @@ end
 const NestedVector{M,T,P,F,R} = NestedView{M,T,1,P,F,R}
 
 @inline function NestedVector{M}(A::AbsArr) where {M}
-    T = viewtype(A, Val(M), Val(1))
+    T = _nested_viewtype(A, Val(M), Val(1))
     NestedVector{M,T}(A)
 end
 
