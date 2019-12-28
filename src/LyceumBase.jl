@@ -63,6 +63,10 @@ end
 # Interfaces
 include("abstractenvironment.jl")
 
+export SpecialArrays
+include("SpecialArrays/SpecialArrays.jl")
+
+export Tools
 include("Tools/Tools.jl")
 
 end # module
