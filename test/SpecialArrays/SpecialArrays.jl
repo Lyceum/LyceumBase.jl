@@ -9,7 +9,7 @@ module SpecialArraysTest
 
     @testset "NestedArray" begin
         include("nestedarrays/functions.jl")
-        include("nestedarrays/nestedarray.jl")
+        include("nestedarrays/nestedview.jl")
     end
 
     @testset "ElasticBuffer" begin
