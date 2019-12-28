@@ -1,3 +1,5 @@
+module ToolsTest
+
 using LyceumBase.Tools, Test
 using Shapes, ElasticArrays, UnsafeArrays, Random, KahanSummation, LinearAlgebra
 
