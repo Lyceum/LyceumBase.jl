@@ -33,27 +33,11 @@ end
 
 
 
-@inline function Base.:(==)(A::NestedView{M,<:Any,N}, B::NestedView{M,<:Any,N}) where {M,N}
-    A.parent == B.parent
-end
-
-@inline Base.parent(A::NestedView) = A.parent
-
-
-function Base.reshape(A::NestedView{M}, ::Val{O}) where {M,N,O}
-    NestedView{M}(reshape(A.parent, Val(M + O)))
-end
-
-
-
 const SlowNestedView{M,T,N,P,R} = NestedView{M,T,N,P,false,R}
 const FastNestedView{M,T,N,P,R} = NestedView{M,T,N,P,true,R}
 
 @inline Base.IndexStyle(::Type{<:FastNestedView}) = IndexLinear()
 @inline Base.IndexStyle(::Type{<:SlowNestedView}) = IndexCartesian()
-
-@inline Base.size(A::NestedView) = back_tuple(size(A.parent), Val(ndims(A)))
-@inline Base.axes(A::NestedView) = back_tuple(axes(A.parent), Val(ndims(A)))
 
 # Need to unpack our zero-dimensional views first
 @inline _maybe_unsqueeze(x::AbstractArray{T,0}) where {T} = x[]
@@ -78,9 +62,7 @@ end
     @inbounds _maybe_wrap(A, view(A.reshaped, _flat_indices(A, i)...))
 end
 
-
 @inline Base.getindex(A::NestedView{<:Any,<:Any,0}) = A.parent
-
 
 @inline function Base.getindex(A::SlowNestedView{M}, c::Colon) where {M}
     NestedView{M}(reshape(copy(A.parent), Val(add(Val(M), Val(1)))))
@@ -97,14 +79,12 @@ end
 end
 
 
-
 @propagate_inbounds function Base.setindex!(A::SlowNestedView{M,<:Any,N}, v, I::Vararg{Any,N}) where {M,N}
     @boundscheck checkbounds(A, I...)
     @inbounds setindex!(A.parent, _maybe_unsqueeze(v), _flat_indices(A, I)...)
     v
 end
 
-# TODO support more than just linear indexing for setindex!
 @propagate_inbounds function Base.setindex!(A::FastNestedView{M}, v, i::Int) where {M}
     @boundscheck checkbounds(A, i)
     @inbounds setindex!(A.reshaped, _maybe_unsqueeze(v), _flat_indices(A, i)...)
@@ -113,17 +93,31 @@ end
 
 
 
+@inline Base.size(A::NestedView) = back_tuple(size(A.parent), Val(ndims(A)))
+
+@inline Base.axes(A::NestedView) = back_tuple(axes(A.parent), Val(ndims(A)))
+
+function Base.reshape(A::NestedView{M}, ::Val{O}) where {M,N,O}
+    NestedView{M}(reshape(A.parent, Val(M + O)))
+end
+
+@inline function Base.:(==)(A::NestedView{M,<:Any,N}, B::NestedView{M,<:Any,N}) where {M,N}
+    A.parent == B.parent
+end
+
+@inline Base.parent(A::NestedView) = A.parent
+
 @inline function Base.resize!(A::NestedView{<:Any,<:Any,N}, dims::NTuple{N,Integer}) where {N}
     resize!(A.parent, inner_size(A)..., dims...)
     A
 end
-
 @inline Base.resize!(A::NestedView, dims...) = resize!(A, dims)
 
 
 @inline function Base.similar(A::NestedView, T::Type{<:AbsArr}, dims::Dims)
     NestedView{ndims(T)}(similar(A.parent, eltype(T), inner_size(A)..., dims...))
 end
+
 
 
 function Base.deepcopy(A::NestedView{M,T,N,P}) where {M,T,N,P}
@@ -138,15 +132,15 @@ end
     A
 end
 
+@propagate_inbounds function Base.copyto!(A::NestedView{M,<:Any,N}, B::AbsArr{<:AbsArr{<:Any,M},N}) where {M,N}
+    flattento!(A, B)
+end
+
+
 
 function Base.append!(A::NestedView{M,<:Any,N}, B::NestedView{M,<:Any,N}) where {M,N}
     inner_size(A) == inner_size(B) || throw(DimensionMismatch("inner_size(A) != inner_size(B)"))
     append!(A.parent, B.parent)
-    A
-end
-
-function Base.append!(A::NestedView, B::AbstractArray) where {M,N}
-    append!(A.parent, B)
     A
 end
 
@@ -190,20 +184,6 @@ end
 
 
 
-@propagate_inbounds function NestedView{M}(A::AbsArr{<:AbsArr{<:Any, M}}) where {M}
-    NestedView{M}(flatten(A))
-end
-
-@propagate_inbounds function NestedView(A::AbsArr{<:AbsArr{<:Any, M}}) where {M}
-    NestedView{M}(flatten(A))
-end
-
-@propagate_inbounds function Base.copyto!(A::NestedView{M,<:Any,N}, B::AbsArr{<:AbsArr{<:Any,M},N}) where {M,N}
-    flattento!(A, B)
-end
-
-
-
 """
     innerview(A::AbstractArray{M+N}, ::Val{M})
     innerview(A::AbstractArray{M+N}, M::Integer)
@@ -233,7 +213,7 @@ end
 
 
 """
-    flatview(A::NestedView{M,T,N,P}) --> parent::P
+    flatview(A::NestedView{M,T,N,P}) --> Array{eltype(T),M+N}
 
 Returns the array of dimensionality `M + N` wrapped by `A`. The shape of
 the result may be freely changed without breaking the inner consistency of `A`.
