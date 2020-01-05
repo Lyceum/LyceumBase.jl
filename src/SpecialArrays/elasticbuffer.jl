@@ -1,13 +1,14 @@
 """
     ElasticBuffer{T,N,M} <: DenseArray{T,N}
 
-An `ElasticBuffer` can grow/shrink in its last dimension. `N` is the total
-number of dimensions, `M == N - 1` the number of non-resizable dimensions.
+An `ElasticBuffer` can grow/shrink in its last dimension. `N` is the total number of
+dimensions, `M == N - 1` the number of non-resizable dimensions (all but the last dimension).
 
 Constructors:
 
-    ElasticBuffer(kernel_size::Dims, data::Vector, len::Int)
-    ElasticBuffer{T}(dims::Integer...)
+    ElasticBuffer(kernel_size::Dims{M}, data::Vector{T}, len::Int)
+    ElasticBuffer{T}(::UndefInitializer, dims::NTuple{N,Integer})
+    ElasticBuffer{T}(::UndefInitializer, dims::Integer...)
     convert(ElasticBuffer, A::AbstractArray)
 """
 struct ElasticBuffer{T,N,M} <: DenseArray{T,N}
@@ -24,6 +25,7 @@ struct ElasticBuffer{T,N,M} <: DenseArray{T,N}
     end
 end
 
+
 ElasticBuffer{T}(::UndefInitializer, dims::Integer...) where {T} = ElasticBuffer{T}(undef, dims)
 
 function ElasticBuffer{T}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N}
@@ -37,9 +39,8 @@ function ElasticBuffer{T}(::UndefInitializer, dims::Dims{N}) where {T,N}
 end
 
 
-
 @propagate_inbounds function ElasticBuffer{T,N,M}(A::AbstractArray) where {T,N,M}
-    M == N - 1 || throw(ArgumentError("ElasticBuffer{T,N=$N,M=$M} does not satisfy requirement M == N-1"))
+    M == N - 1 || throw(ArgumentError("ElasticBuffer{$T,$N,$M} does not satisfy requirement M == N - 1"))
     ElasticBuffer{T,N}(A)
 end
 
@@ -52,18 +53,7 @@ end
 @propagate_inbounds ElasticBuffer(A::AbstractArray{T,N}) where {T,N} = ElasticBuffer{T,N}(A)
 
 
-
-Base.convert(::Type{ElasticBuffer{T,N,M}}, A::ElasticBuffer{T,N,M}) where {T,N,M} = A
-Base.convert(::Type{ElasticBuffer{T,N,M}}, A::AbstractArray) where {T,N,M} = ElasticBuffer{T,N,M}(A)
-
-Base.convert(::Type{ElasticBuffer{T,N}}, A::ElasticBuffer{T,N}) where {T,N} = A
-Base.convert(::Type{ElasticBuffer{T,N}}, A::AbstractArray) where {T,N} = ElasticBuffer{T,N}(A)
-
-Base.convert(::Type{ElasticBuffer{T}}, A::ElasticBuffer{T}) where {T} = A
-Base.convert(::Type{ElasticBuffer{T}}, A::AbstractArray) where {T} = ElasticBuffer{T}(A)
-
-Base.convert(::Type{ElasticBuffer}, A::ElasticBuffer) = A
-Base.convert(::Type{ElasticBuffer}, A::AbstractArray) = ElasticBuffer(A)
+Base.convert(::Type{T}, A::AbstractArray) where {T<:ElasticBuffer} = A isa T ? A : T(A)
 
 
 @inline function Base.:(==)(A::ElasticBuffer{<:Any,N,M}, B::ElasticBuffer{<:Any,N,M}) where {N,M}

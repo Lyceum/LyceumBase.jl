@@ -28,9 +28,7 @@ end
     NestedView{M,T,N,P}(parent)
 end
 
-@inline Base.convert(::Type{R}, B::R) where {R <: NestedView} = B
-@inline Base.convert(R::Type{<:NestedView}, B::AbsArr) = R(B)
-
+Base.convert(::Type{T}, A::AbstractArray) where {T<:NestedView} = A isa T ? A : T(A)
 
 
 const SlowNestedView{M,T,N,P,R} = NestedView{M,T,N,P,false,R}
