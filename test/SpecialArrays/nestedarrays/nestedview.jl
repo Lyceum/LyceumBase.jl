@@ -2,44 +2,23 @@ const RAND_TEST_SIZES = (2,3,2,4,5)
 const TEST_M = 0:5
 const TEST_U = (Int, Float64)
 
-randflat(T::Type, ::Val{0}) = (x = zeros(T); x[] = rand(T); x)
-function randflat(T::Type, ::Val{L}) where {L}
-    if L == 0
-        x = zeros(T)
-        x[] = rand(T)
-        return x
-    else
-        sz = ntuple(i -> 2*i, Val(L))
-        x = rand(T, sz...)
-    end
-end
 
-function randnested(T::Type, ::Val{M}, ::Val{N}) where {M,N}
-    sz_inner = ntuple(i -> RAND_TEST_SIZES[i], M)
-    sz_outer = ntuple(i -> RAND_TEST_SIZES[i + M], N)
-    A = Array{Array{T, M}, N}(undef, sz_outer...)
-    for i in eachindex(A)
-        A[i] = rand(sz_inner...)
+
+function randtest(T::Type, ::Val{M}, ::Val{N}) where {M,N}
+    dims = ntuple(i -> 2i, Val(M + N))
+    M_dims, N_dims = SpecialArrays.split_tuple(dims, Val(M))
+    nested = Array{Array{T, M}, N}(undef, N_dims...)
+    for i in eachindex(nested)
+        x = rand!(zeros(T, M_dims...))
+        nested[i] = x
     end
-    A
+    flat = reshape(mapreduce(vec, vcat, nested), dims)
+    return nested, flat
 end
 
 nones(::Val{N}) where {N} = ntuple(_ -> 1, Val(N))
 
-@generated function testindices(::Val{M}, ::Val{N}) where {M,N}
-    ex = Expr(:tuple)
-    I = ncolons(Val(N))
-    push!(ex.args, (I, (ncolons(Val(M))..., I...)))
 
-    I = nones(Val(N))
-    push!(ex.args, (I, (ncolons(Val(M))..., I...)))
-
-    if M > 1
-        I = (ncolons(Val(N-1))..., 1)
-        push!(ex.args, (I, (ncolons(Val(M))..., I...)))
-    end
-    ex
-end
 
 @testset "NestedVector" begin
     @test begin
@@ -75,11 +54,13 @@ end
         continue
     end
 
-    T = SpecialArrays._nested_viewtype(randflat(U, Val(M+N)), Val(M), Val(N))
     L = M + N
+    T = let (_, flat) = randtest(U, Val(M), Val(N))
+        typeof(view(flat, ncolons(Val(M))..., ntuple(i -> firstindex(flat, M + i), Val(N))...))
+    end
 
     @testset "constructors" begin
-        flat = randflat(U, Val(M+N))
+        _, flat = randtest(U, Val(M), Val(N))
         A = NestedView{M}(flat)
         AT = NestedView{M,T,N,Array{U,M+N}}
 
@@ -120,19 +101,22 @@ end
         @test_throws DomainError check_nestedarray_parameters(Val(M),T,Val(-1),Array{U,M+N})
     end
 
-    @testset "basic array interface" begin
-        flat = randflat(U, Val(M+N))
+    @testset "misc array interface" begin
+        _, flat = randtest(U, Val(M), Val(N))
         A = @inferred(NestedView{M}(flat))
         @test @inferred(size(A)) == size(flat)[(M+1):(M+N)]
+        @test @inferred(axes(A)) == axes(flat)[(M+1):(M+N)]
+        @test @inferred(length(A)) == prod(size(A))
         @test @inferred(eltype(A)) === T
         @test @inferred(ndims(A)) == N
-        @test @inferred(length(inner_size(A))) == M
+        if N > 0
+            @test size(@inferred(reshape(A, Val(1)))) == (length(A), )
+        end
         @test A == NestedView{M}(copy(flat))
-
+        @test parent(A) === A.parent
         if M != N
             @test A != NestedView{L-M}(copy(flat))
         end
-
         let B = similar(A, size(A)..., 5)
             @test ndims(B) == ndims(A) + 1
             @test size(B) == (size(A)..., 5)
@@ -146,24 +130,12 @@ end
         end
     end
 
-    @testset "functions" begin
-        flat = randflat(U, Val(M+N))
-        A = NestedView{M}(flat)
-        @test flatview(A) === flat
-        @test inner_eltype(typeof(A)) == eltype(typeof(flat)) == U
-        @test inner_size(A) == size(flat)[1:M]
-        @test inner_axes(A) == axes(flat)[1:M]
-        @test inner_ndims(typeof(A)) == M
-        @test inner_length(A) == prod(size(flat)[1:M])
-        @test inner_ndims(innerview(flat, Val(M))) == ndims(outerview(flat, Val(M)))
-    end
-
     @testset "getindex/setindex!" begin
-        flat = randflat(U, Val(M+N))
-       A = @inferred(NestedView{M}(flat))
+        _, flat = randtest(U, Val(M), Val(N))
+        A = @inferred(NestedView{M}(flat))
 
-        I = nones(Val(N))
-        let x = getindex(flat, ncolons(Val(M))..., I...)
+        @test IndexStyle(A) === IndexStyle(A.parent)
+        let I = nones(Val(N)), x = getindex(flat, ncolons(Val(M))..., I...)
             @test _maybe_unsqueeze(@inferred(getindex(A, I...))) == x
         end
         let B = @inferred(getindex(A, :))
@@ -174,7 +146,7 @@ end
     end
 
     @testset "deepcopy" begin
-        flat = randflat(U, Val(M+N))
+        _, flat = randtest(U, Val(M), Val(N))
         A = @inferred(NestedView{M}(flat))
         B = deepcopy(A)
         @test all(eachindex(A)) do I
@@ -182,14 +154,23 @@ end
         end
         for I=eachindex(A)
             x = similar(A[I])
-            x .= 1
-            #if x isa AbstractArray{T, 0} where T
-            #    x = x[]
-            #end
+            rand!(x)
             setindex!(A, x, Tuple(I)...)
         end
         @test all(eachindex(A)) do I
             B[I] != A[I]
         end
+    end
+
+    @testset "functions" begin
+        _, flat = randtest(U, Val(M), Val(N))
+        A = NestedView{M}(flat)
+        @test flatview(A) === flat
+        @test inner_eltype(typeof(A)) == eltype(typeof(flat)) == U
+        @test inner_size(A) == size(flat)[1:M]
+        @test inner_axes(A) == axes(flat)[1:M]
+        @test inner_ndims(typeof(A)) == M
+        @test inner_length(A) == prod(size(flat)[1:M])
+        @test inner_ndims(innerview(flat, Val(M))) == ndims(outerview(flat, Val(M)))
     end
 end
