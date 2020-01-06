@@ -1,39 +1,10 @@
 module LyceumBase
 
+using Base: @propagate_inbounds
+using Test
+using Random
 using Shapes
-
-# Environment interface
-export
-    AbstractEnv,
-    EnvSpaces,
-
-    statespace,
-    getstate!,
-    getstate,
-
-    observationspace,
-    getobs!,
-    getobs,
-
-    actionspace,
-    getaction!,
-    setaction!,
-    getaction,
-
-    rewardspace,
-    getreward,
-
-    evaluationspace,
-    geteval,
-
-    reset!,
-    randreset!,
-    step!,
-    isdone,
-    sharedmemory_envs,
-    timestep,
-    effective_timestep,
-    spaces
+using BenchmarkTools: @benchmark
 
 
 
@@ -51,18 +22,61 @@ const RealVec = AbstractVector{<:Real}
 
 
 
-macro mustimplement(sig)
-    fname = sig.args[1]
-    arg1 = sig.args[2]
-    if isa(arg1, Expr)
-        arg1 = arg1.args[1]
-    end
-    :($(esc(sig)) = error(typeof($(esc(arg1))), " must implement ", $(Expr(:quote, fname))))
-end
+include("util.jl")
 
-# Interfaces
+
+
+####
+#### Interfaces
+####
+
+"""
+    tconstruct(T::Type, n::Integer, args...; kwargs...) --> NTuple{n, <:T}
+
+Return a Tuple of `n` instances of `T`. By default, this returns
+`ntuple(_ -> T(args...; kwargs...), n)`, but this function can be
+extended for types that can share data across instances for greater
+cache efficiency/performance.
+"""
+function tconstruct(T::Type, n::Integer, args...; kwargs...)
+    n > 0 || throw(ArgumentError("n must be > 0"))
+    ntuple(_ -> T(args...; kwargs...), N)
+end
+export tconstruct
+
+export
+    AbstractEnvironment,
+    EnvSpaces,
+
+    statespace,
+    getstate!,
+    setstate!,
+    getstate,
+
+    obsspace,
+    getobs!,
+    getobs,
+
+    actionspace,
+    getaction!,
+    setaction!,
+    getaction,
+
+    rewardspace,
+    getreward,
+
+    evalspace,
+    geteval,
+
+    reset!,
+    randreset!,
+    step!,
+    isdone,
+    timestep,
+    spaces
 include("abstractenvironment.jl")
 
+export Tools
 include("Tools/Tools.jl")
 
 end # module

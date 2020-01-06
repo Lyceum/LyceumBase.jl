@@ -3,20 +3,20 @@ struct TrajectoryBuffer{B1<:ElasticBuffer,B2<:ElasticBuffer}
     terminal::B2
 end
 
-function TrajectoryBuffer(env::AbstractEnv; sizehint::Union{Integer,Nothing} = nothing, dtype::Maybe{DataType} = nothing)
+function TrajectoryBuffer(env::AbstractEnvironment; sizehint::Union{Integer,Nothing} = nothing, dtype::Maybe{DataType} = nothing)
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
 
     trajectory = ElasticBuffer(
         states = sp.statespace,
-        observations = sp.observationspace,
+        observations = sp.obsspace,
         actions = sp.actionspace,
         rewards = sp.rewardspace,
-        evaluations = sp.evaluationspace
+        evaluations = sp.evalspace
     )
 
     terminal = ElasticBuffer(
         states = sp.statespace,
-        observations = sp.observationspace,
+        observations = sp.obsspace,
         dones = Bool,
         lengths = Int,
     )
@@ -30,7 +30,7 @@ function TrajectoryBuffer(env::AbstractEnv; sizehint::Union{Integer,Nothing} = n
 end
 
 
-struct EnvSampler{E<:AbstractEnv,B<:TrajectoryBuffer,BA}
+struct EnvSampler{E<:AbstractEnvironment,B<:TrajectoryBuffer,BA}
     envs::Vector{E}
     bufs::Vector{B}
     batch::BA
@@ -155,7 +155,7 @@ function _threadsample!(
 end
 
 
-function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnv) where {F}
+function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnvironment) where {F}
     grow!(traj)
     t = lastindex(traj)
     @uviews traj begin
@@ -178,7 +178,7 @@ function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnv) where
     end
 end
 
-function terminate!(term::ElasticBuffer, env::AbstractEnv, trajlength::Integer, done::Bool)
+function terminate!(term::ElasticBuffer, env::AbstractEnvironment, trajlength::Integer, done::Bool)
     grow!(term)
     i = lastindex(term)
     @uviews term begin
@@ -192,16 +192,16 @@ function terminate!(term::ElasticBuffer, env::AbstractEnv, trajlength::Integer, 
 end
 
 
-function makebatch(env::AbstractEnv; sizehint::Union{Integer,Nothing} = nothing, dtype::Maybe{DataType} = nothing)
+function makebatch(env::AbstractEnvironment; sizehint::Union{Integer,Nothing} = nothing, dtype::Maybe{DataType} = nothing)
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
     batch = (
         states = BatchedArray(sp.statespace),
-        observations = BatchedArray(sp.observationspace),
+        observations = BatchedArray(sp.obsspace),
         actions = BatchedArray(sp.actionspace),
         rewards = BatchedArray(sp.rewardspace),
-        evaluations = BatchedArray(sp.evaluationspace),
+        evaluations = BatchedArray(sp.evalspace),
         terminal_states = BatchedArray(sp.statespace),
-        terminal_observations = BatchedArray(sp.observationspace),
+        terminal_observations = BatchedArray(sp.obsspace),
         dones = Vector{Bool}(),
     )
     !isnothing(sizehint) && foreach(el -> sizehint!(el, sizehint), batch)
@@ -280,7 +280,7 @@ end
 
 
 export NaieveEnvSampler
-struct NaieveEnvSampler{E<:AbstractEnv,B1,B2}
+struct NaieveEnvSampler{E<:AbstractEnvironment,B1,B2}
     envs::Vector{E}
     trajectory::B1
     terminal::B2
