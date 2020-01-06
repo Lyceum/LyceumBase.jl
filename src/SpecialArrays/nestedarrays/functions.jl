@@ -11,14 +11,14 @@ function flatten end
 @inline flatten(A::AbsArr) = A
 
 @inline function flatten(A::AbsArr{<:AbsArr{U,M},N}) where {U,M,N}
-    L = add(Val(M), Val(N))
+    L = M + N
     sz_inner = inner_size(A)
     A_flat = Array{U,L}(undef, sz_inner..., size(A)...)
     unsafe_flattento!(A_flat, A, sz_inner)
 end
 
 @inline function flattento!(A::AbsArr{<:Any, L}, B::AbsArr{<:AbsArr{<:Any,M},N}) where {L,M,N}
-    L == add(Val(M), Val(N)) || throw(ArgumentError("ndims(A) != inner_ndims(B)"))
+    L == M + N || throw(ArgumentError("ndims(A) != inner_ndims(B)"))
     sz_inner = inner_size(B)
     inner_size(A) == sz_inner || throw(DimensionMismatch("inner_size(A) != inner_size(B)"))
     unsafe_flattento!(A, B, sz_inner)

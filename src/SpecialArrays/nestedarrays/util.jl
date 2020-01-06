@@ -58,6 +58,6 @@ end
 @inline _has_fast_indexing(::IndexStyle, ::Val) = false
 
 @inline function _maybe_reshape(::IndexLinear, ::Val{M}, parent::AbsArr) where {M}
-    reshape(parent, Val(add(Val(M), Val(1))))
+    reshape(parent, Val(M + 1))
 end
 @inline _maybe_reshape(::IndexStyle, ::Val, parent::AbsArr) = parent
