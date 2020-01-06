@@ -18,12 +18,12 @@ end
 end
 
 @inline function NestedView{M,T}(parent::P) where {M,T,P}
-    N = sub(Val(ndims(P)), Val(M))
+    N = ndims(P) - M
     NestedView{M,T,N,P}(parent)
 end
 
 @inline function NestedView{M}(parent::P) where {M,P} # TODO test
-    N = sub(Val(ndims(P)), Val(M))
+    N = ndims(P) - M
     T = _nested_viewtype(parent, Val(M), Val(N))
     NestedView{M,T,N,P}(parent)
 end
@@ -63,11 +63,11 @@ end
 @inline Base.getindex(A::NestedView{<:Any,<:Any,0}) = A.parent
 
 @inline function Base.getindex(A::SlowNestedView{M}, c::Colon) where {M}
-    NestedView{M}(reshape(copy(A.parent), Val(add(Val(M), Val(1)))))
+    NestedView{M}(reshape(copy(A.parent), Val(M + 1)))
 end
 
 @inline function Base.getindex(A::FastNestedView{M}, c::Colon) where {M}
-    NestedView{M}(reshape(copy(A.parent), Val(add(Val(M), Val(1)))))
+    NestedView{M}(reshape(copy(A.parent), Val(M + 1)))
 end
 
 
@@ -160,7 +160,7 @@ const NestedVector{M,T,P,F,R} = NestedView{M,T,1,P,F,R}
 end
 
 @inline function NestedVector(A::AbsArr{<:Any, L}) where {L}
-    M = sub(Val(L), Val(1))
+    M = L - 1
     NestedVector{M}(A)
 end
 
@@ -204,7 +204,7 @@ wrapping it into an [`NestedView`](@ref). See also: [`innerview`](@ref).
 function outerview end
 
 @inline function outerview(A::AbsArr{<:Any, L}, ::Val{N}) where {L,N}
-    M = sub(Val(L), Val(N))
+    M = L - N
     NestedView{M}(A)
 end
 @inline outerview(A::AbsArr, M::Integer) = outerview(A, Val(convert(Int, M)))
