@@ -413,79 +413,128 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
 
             @testset "time consistency" begin
                 e = makeenv()
-                @test @inferred(time(e)) isa Float64
+                @test time(e) isa Float64
                 t1 = time(e)
                 @test time(e) === t1
-                @test @inferred(step!(e)) === e
+                @test step!(e) === e
                 t2 = time(e)
-                @test (t2 - t1) == @inferred(timestep(e))
+                @test (t2 - t1) == timestep(e)
             end
+
+            # For each of state/action/observation/reward/eval, test:
+            # 1. return type of getfoo(env) matches foospace(env)
+            # 2. getfoo!(x, env) returns x
+            # 3. getfoo!(x, env) == getfoo(env)
+            # 4. if settable, that setfoo!(env, x) returns env
+            # 5. if settable, that getfoo(env) == x after setfoo!(env, x)
+            # 6. all functions are inferrable
 
             @testset "state" begin
                 let e = makeenv()
-                    @test @inferred(statespace(e)) isa Shapes.AbstractVectorShape
-                    @test eltype(@inferred(getstate(e))) == eltype(statespace(e))
-                    @test axes(@inferred(getstate(e))) == axes(statespace(e))
+                    @test statespace(e) isa Shapes.AbstractVectorShape
+                    @test eltype(getstate(e)) == eltype(statespace(e))
+                    @test axes(getstate(e)) == axes(statespace(e))
                 end
 
-                let e = makeenv(), x = rand(statespace(e))
-                    @test x === @inferred(getstate!(x, e))
-                    @test getstate!(rand(statespace(e)), e) == getstate(e)
+                @test let e = makeenv(), x = rand(statespace(e))
+                    x === getstate!(x, e)
+                end
+                @test let e = makeenv()
+                    getstate!(rand(statespace(e)), e) == getstate(e)
                 end
 
-                let e = makeenv(), x = rand(statespace(e))
-                    @test e === @inferred(setstate!(e, x))
-                    @test x == getstate!(rand(statespace(e)), e) == getstate(e)
+                @test let e = makeenv()
+                    e === setstate!(e, rand(statespace(e)))
+                end
+                @test let e = makeenv(), x = rand(statespace(e))
+                    setstate!(e, x)
+                    x == getstate!(rand(statespace(e)), e) == getstate(e)
                 end
             end
 
             @testset "action" begin
                 let e = makeenv()
-                    @test @inferred(actionspace(e)) isa Shapes.AbstractVectorShape
-                    @test eltype(@inferred(getaction(e))) == eltype(actionspace(e))
-                    @test axes(@inferred(getaction(e))) == axes(actionspace(e))
+                    @test actionspace(e) isa Shapes.AbstractVectorShape
+                    @test eltype(getaction(e)) == eltype(actionspace(e))
+                    @test axes(getaction(e)) == axes(actionspace(e))
                 end
 
-                let e = makeenv(), x = rand(actionspace(e))
-                    @test x === @inferred(getaction!(x, e))
-                    @test getaction!(rand(actionspace(e)), e) == getaction(e)
+                @test let e = makeenv(), x = rand(actionspace(e))
+                    x === getaction!(x, e)
+                end
+                @test let e = makeenv()
+                    getaction!(rand(actionspace(e)), e) == getaction(e)
                 end
 
-                let e = makeenv(), x = rand(actionspace(e))
-                    @test e === @inferred(setaction!(e, x))
-                    @test x == getaction!(rand(actionspace(e)), e) == getaction(e)
+                @test let e = makeenv()
+                    e === setaction!(e, rand(actionspace(e)))
+                end
+                @test let e = makeenv(), x = rand(actionspace(e))
+                    setaction!(e, x)
+                    x == getaction!(rand(actionspace(e)), e) == getaction(e)
                 end
             end
 
             @testset "observation" begin
                 let e = makeenv()
-                    @test @inferred(obsspace(e)) isa Shapes.AbstractVectorShape
-                    @test eltype(@inferred(getobs(e))) == eltype(obsspace(e))
-                    @test axes(@inferred(getobs(e))) == axes(obsspace(e))
+                    @test obsspace(e) isa Shapes.AbstractVectorShape
+                    @test eltype(getobs(e)) == eltype(obsspace(e))
+                    @test axes(getobs(e)) == axes(obsspace(e))
                 end
 
-                let e = makeenv(), x = rand(obsspace(e))
-                    @test x === @inferred(getobs!(x, e))
-                    @test getobs!(rand(obsspace(e)), e) == getobs(e)
+                @test let e = makeenv(), x = rand(obsspace(e))
+                    x === getobs!(x, e)
+                end
+                @test let e = makeenv()
+                    getobs!(rand(obsspace(e)), e) == getobs(e)
                 end
             end
+
+            # For getreward, geteval, and isdone, additionally test that they are functions of the
+            # passed in (state, action, observation) and not any internal data in the env.
 
             @testset "reward" begin
-                e = makeenv()
-                @test @inferred(rewardspace(e)) isa ScalarShape
-                @test typeof(@inferred(getreward(e))) == eltype(rewardspace(e))
+                let e = makeenv()
+                    @test rewardspace(e) isa ScalarShape
+                    @test typeof(getreward(e)) == eltype(rewardspace(e))
+                end
 
-                s, a, o = getstate(e), getaction(e), getobs(e)
-                @test getreward(s, a, o, e) == getreward(e)
+                @test let e = makeenv(), s = getstate(e), a = getaction(e), o = getobs(e)
+                    r1 = getreward(s, a, o, e)
+                    r2 = getreward(e)
+                    randreset!(e)
+                    r3 = getreward(s, a, o, e)
+                    r1 == r2 == r3
+                end
             end
 
-            @testset "evaluation" begin
-                e = makeenv()
-                @test @inferred(evalspace(e)) isa ScalarShape
-                @test typeof(@inferred(geteval(e))) == eltype(evalspace(e))
+            @testset "eval" begin
+                let e = makeenv()
+                    @test evalspace(e) isa ScalarShape
+                    @test typeof(geteval(e)) == eltype(evalspace(e))
+                end
 
-                s, a, o = getstate(e), getaction(e), getobs(e)
-                @test geteval(s, a, o, e) == geteval(e)
+                @test let e = makeenv(), s = getstate(e), a = getaction(e), o = getobs(e)
+                    r1 = geteval(s, a, o, e)
+                    r2 = geteval(e)
+                    randreset!(e)
+                    r3 = geteval(s, a, o, e)
+                    r1 == r2 == r3
+                end
+            end
+
+            @testset "isdone" begin
+                @test let e = makeenv()
+                    isdone(e) isa Bool
+                end
+
+                @test let e = makeenv(), s = getstate(e), a = getaction(e), o = getobs(e)
+                    d1 = isdone(s, a, o, e)
+                    d2 = isdone(e)
+                    randreset!(e)
+                    d3 = isdone(s, a, o, e)
+                    d1 == d2 == d3
+                end
             end
 
             @testset "constructor consistency" begin
@@ -499,7 +548,7 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
 
             @testset "reset" begin
                 let e = makeenv()
-                    @test e === @inferred(reset!(e))
+                    @test e === reset!(e)
                 end
 
                 let e1 = makeenv(), e2 = makeenv()
@@ -514,8 +563,8 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
 
             @testset "randreset" begin
                 let e = makeenv()
-                    @test e === @inferred(randreset!(e))
-                    @test e === @inferred(randreset!(Random.default_rng(), e))
+                    @test e === randreset!(e)
+                    @test e === randreset!(Random.default_rng(), e)
                 end
 
                 let e1 = makeenv(), e2 = makeenv(), rng = Random.MersenneTwister()
@@ -543,15 +592,12 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
                 end
             end
 
-            let e = makeenv()
-                @test @inferred(isdone(e)) isa Bool
-            end
         end
 
         @testset "Determinism" begin
             # execute a random control _trajectory and check for repeatability
             let e1 = makeenv(), e2 = makeenv()
-                actions = rand(actionspace(e1), 100)
+                actions = rand(actionspace(e1), 1000)
                 t1 = _rollout(e1, actions)
                 t2 = _rollout(e2, actions)
                 reset!(e1)
@@ -587,6 +633,35 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
             @noalloc isdone($s, $a, $o, $e)
             @noalloc time($e)
             @noalloc timestep($e)
+        end
+
+        @testset "Type stability" begin
+            e = makeenv()
+            s, a, o = getstate(e), getaction(e), getobs(e)
+
+            @inferred statespace(e)
+            @inferred getstate!(s, e)
+            @inferred setstate!(e, s)
+
+            @inferred actionspace(e)
+            @inferred getaction!(a, e)
+            @inferred setaction!(e, a)
+
+            @inferred obsspace(e)
+            @inferred getobs!(o, e)
+
+            @inferred rewardspace(e)
+            @inferred getreward(s, a, o, e)
+
+            @inferred evalspace(e)
+            @inferred geteval(s, a, o, e)
+
+            @inferred reset!(e)
+            @inferred randreset!(e)
+            @inferred step!(e)
+            @inferred isdone(s, a, o, e)
+            @inferred time(e)
+            @inferred timestep(e)
         end
     end
 end
