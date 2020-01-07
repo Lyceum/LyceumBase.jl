@@ -13,9 +13,7 @@
         )))
     end
     U = eltype(P)
-    if M == 0 && T != U
-        :(throw(ArgumentError("Type mismatch in NestedView parameters. Got T = $T and U = $U")))
-    elseif M > 0 && !(T <: AbstractArray{U,M} && P <: AbstractArray{U,L})
+    if !(T <: AbstractArray{U,M} && P <: AbstractArray{U,L})
         return :(throw(ArgumentError("Type mismatch in NestedView parameters. Got T = $T and P = $P")))
     end
     nothing
