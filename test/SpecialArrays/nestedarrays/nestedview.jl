@@ -2,8 +2,6 @@ const RAND_TEST_SIZES = (2,3,2,4,5)
 const TEST_M = 0:5
 const TEST_U = (Int, Float64)
 
-
-
 function randtest(T::Type, ::Val{M}, ::Val{N}) where {M,N}
     dims = ntuple(i -> 2i, Val(M + N))
     M_dims, N_dims = SpecialArrays.split_tuple(dims, Val(M))
@@ -19,31 +17,28 @@ end
 nones(::Val{N}) where {N} = ntuple(_ -> 1, Val(N))
 
 
-
 @testset "NestedVector" begin
     @test begin
         A = NestedVector{0}(zeros(10))
         resize!(A, length(A) + 10)
         length(A) == 20
     end
-    let
-        A = @inferred(NestedVector{0}(zeros(0)))
-        B = @inferred(NestedVector(zeros(0)))
-        C = NestedVector{0}(zeros(0))
-        xs = Array{Float64,0}[]
-        for i=1:10
-            x = zeros()
-            x .= i
-            push!(A, x)
-            push!(xs, x)
-        end
-        append!(B, xs)
-        append!(C, B)
-        for i=1:10
-            @test A[i] == xs[i]
-            @test B[i] == xs[i]
-            @test C[i] == xs[i]
-        end
+    A = @inferred(NestedVector{0}(zeros(0)))
+    B = @inferred(NestedVector(zeros(0)))
+    C = NestedVector{0}(zeros(0))
+    xs = Array{Float64,0}[]
+    for i=1:10
+        x = zeros()
+        x .= i
+        push!(A, x)
+        push!(xs, x)
+    end
+    append!(B, xs)
+    append!(C, B)
+    for i=1:10
+        @test A[i] == xs[i]
+        @test B[i] == xs[i]
+        @test C[i] == xs[i]
     end
 end
 
@@ -64,16 +59,6 @@ end
         A = NestedView{M}(flat)
         AT = NestedView{M,T,N,Array{U,M+N}}
 
-        @test A == @inferred(convert(NestedView{M,T,N,Array{U,M+N}}, flat))
-        @test A == @inferred(convert(NestedView{M,T,N}, flat))
-        @test A == @inferred(convert(NestedView{M,T}, flat))
-        @test A == @inferred(convert(NestedView{M}, flat))
-
-        @test typeof(convert(NestedView{M,T,N,Array{U,M+N}}, flat)) <: AT
-        @test typeof(convert(NestedView{M,T,N}, flat)) <: AT
-        @test typeof(convert(NestedView{M,T}, flat)) <: AT
-        @test typeof(convert(NestedView{M}, flat)) <: AT
-
         @test A == @inferred(NestedView{M,T,N,Array{U,M+N}}(flat))
         @test A == @inferred(NestedView{M,T,N}(flat))
         @test A == @inferred(NestedView{M,T}(flat))
@@ -85,48 +70,74 @@ end
         @test typeof(NestedView{M,T}(flat)) <: AT
         @test typeof(NestedView{M}(flat)) <: AT
 
+    end
+
+    @testset "convert" begin
+        _, flat = randtest(U, Val(M), Val(N))
+        A = NestedView{M}(flat)
+        AT = NestedView{M,T,N,Array{U,M+N}}
+
+        @test A == @inferred(convert(NestedView{M,T,N,Array{U,M+N}}, flat))
+        @test A == @inferred(convert(NestedView{M,T,N}, flat))
+        @test A == @inferred(convert(NestedView{M,T}, flat))
+        @test A == @inferred(convert(NestedView{M}, flat))
+
+        @test typeof(convert(NestedView{M,T,N,Array{U,M+N}}, flat)) <: AT
+        @test typeof(convert(NestedView{M,T,N}, flat)) <: AT
+        @test typeof(convert(NestedView{M,T}, flat)) <: AT
+        @test typeof(convert(NestedView{M}, flat)) <: AT
+    end
+
+    @testset "inner/outerview" begin
+        _, flat = randtest(U, Val(M), Val(N))
+        A = NestedView{M}(flat)
+        AT = NestedView{M,T,N,Array{U,M+N}}
+
         @test A == @inferred(innerview(flat, Val(M)))
         @test typeof(innerview(flat, Val(M))) <: AT
         @test typeof(innerview(flat, M)) <: AT
-
-        @test typeof(@inferred(similar(A))) === typeof(A)
-        @test typeof(@inferred(similar(A, Array{U,N}))) <: NestedView{N,<:AbstractArray{U,N},M,Array{U,M+N}}
+        @test typeof(outerview(flat, Val(N))) <: AT
+        @test typeof(outerview(flat, N)) <: AT
     end
 
-    @testset "parameter checks" begin
-        @test_throws ArgumentError check_nestedarray_parameters(Val(M+1),T,Val(N),Array{U,M+N})
-        @test_throws ArgumentError check_nestedarray_parameters(Val(M),T,Val(N+1),Array{U,M+N})
-        @test_throws ArgumentError check_nestedarray_parameters(Val(M),T,Val(N),Array{U,M+N+1})
-        @test_throws DomainError check_nestedarray_parameters(Val(-1),T,Val(N),Array{U,M+N})
-        @test_throws DomainError check_nestedarray_parameters(Val(M),T,Val(-1),Array{U,M+N})
+    @testset "similar" begin
+        _, flat = randtest(U, Val(M), Val(N))
+        A = NestedView{M}(flat)
+
+        @test typeof(@inferred(similar(A))) === typeof(A)
+        @test typeof(@inferred(similar(A, Array{U,M}))) <: NestedView{M,<:AbstractArray{U,M},N,Array{U,M+N}}
+
+        V = U === Int ? Float64 : Int
+        @test typeof(@inferred(similar(A, Array{V,M}))) <: NestedView{M,<:AbstractArray{V,M},N,Array{V,M+N}}
+
+        let B = similar(A, Array{U, M}, (size(A)..., 10))
+            @test typeof(B) <: NestedView{M,<:AbstractArray{U,M},N+1,Array{U,M+N+1}}
+            @test size(B) == (size(A)..., 10)
+        end
+
+        let B = similar(A, Array{V, M}, (size(A)..., 10))
+            @test typeof(B) <: NestedView{M,<:AbstractArray{V,M},N+1,Array{V,M+N+1}}
+            @test size(B) == (size(A)..., 10)
+        end
     end
 
     @testset "misc array interface" begin
         _, flat = randtest(U, Val(M), Val(N))
         A = @inferred(NestedView{M}(flat))
+
         @test @inferred(size(A)) == size(flat)[(M+1):(M+N)]
         @test @inferred(axes(A)) == axes(flat)[(M+1):(M+N)]
         @test @inferred(length(A)) == prod(size(A))
         @test @inferred(eltype(A)) === T
         @test @inferred(ndims(A)) == N
+        @test @inferred(parent(A)) === A.parent
+
         if N > 0
             @test size(@inferred(reshape(A, Val(1)))) == (length(A), )
         end
-        @test A == NestedView{M}(copy(flat))
-        @test parent(A) === A.parent
+
         if M != N
             @test A != NestedView{L-M}(copy(flat))
-        end
-        let B = similar(A, size(A)..., 5)
-            @test ndims(B) == ndims(A) + 1
-            @test size(B) == (size(A)..., 5)
-        end
-        let B = NestedView{M}(similar(flat))
-            @assert B.parent !== flat
-            A.parent .= 0
-            B.parent .= 1
-            copyto!(B, A)
-            @test B == A
         end
     end
 
@@ -145,13 +156,17 @@ end
         end
     end
 
-    @testset "deepcopy" begin
+    @testset "copy/deepcopy" begin
         _, flat = randtest(U, Val(M), Val(N))
         A = @inferred(NestedView{M}(flat))
+
+        @test A == NestedView{M}(copy(flat))
+
         B = deepcopy(A)
         @test all(eachindex(A)) do I
             B[I] == A[I]
         end
+
         for I=eachindex(A)
             x = similar(A[I])
             rand!(x)
@@ -173,4 +188,27 @@ end
         @test inner_length(A) == prod(size(flat)[1:M])
         @test inner_ndims(innerview(flat, Val(M))) == ndims(outerview(flat, Val(M)))
     end
+end
+
+@testset "parameter checks" begin
+    M = 1
+    N = 1
+    U = Int
+    T = UnsafeArray{U, 1}
+    @test_throws ArgumentError check_nestedarray_parameters(Val(1.0),T,Val(N),UnsafeArray{U,M+N})
+    @test_throws ArgumentError check_nestedarray_parameters(Val(M),T,Val(1.0),UnsafeArray{U,M+N})
+    @test_throws ArgumentError check_nestedarray_parameters(Val(M),T,Val(N),UnsafeArray{U, 1.0})
+
+    @test_throws DomainError check_nestedarray_parameters(Val(-1),T,Val(N),UnsafeArray{U,M+N})
+    @test_throws DomainError check_nestedarray_parameters(Val(M),T,Val(-1),UnsafeArray{U,M+N})
+    @test_throws DomainError check_nestedarray_parameters(Val(M),T,Val(N),UnsafeArray{U,-1})
+
+    @test_throws ArgumentError check_nestedarray_parameters(Val(M),T,Val(N),UnsafeArray{Float64,M+N})
+
+    @test_throws ArgumentError check_nestedarray_parameters(Val(M),T,Val(N),UnsafeArray{U,M+N+1})
+
+    @test_throws ArgumentError check_nestedarray_parameters(Val(0),Float64,Val(N),UnsafeArray{U,N})
+
+    @test_throws ArgumentError check_nestedarray_parameters(Val(M+1),T,Val(N),UnsafeArray{U,M+N})
+    @test_throws ArgumentError check_nestedarray_parameters(Val(M),T,Val(N+1),UnsafeArray{U,M+N})
 end
