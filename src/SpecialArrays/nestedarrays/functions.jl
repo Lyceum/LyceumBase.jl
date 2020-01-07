@@ -1,10 +1,8 @@
 """
-    flatten(A::AbstractArray)
     flatten(A::AbstractArray{<:AbstractArray{U,M},N}
 
-Flatten `A` into an Array{U,M+N}. Fails if the elements of `A`
-do not all have the same size.
-If the `A` is not a nested array, the return value is `A` itself.
+Flatten `A` into an Array{U,M+N}. Fails if the elements of `A` do not all
+have the same size. If the `A` is not a  nested array, the return value is `A` itself.
 """
 function flatten end
 
@@ -17,10 +15,11 @@ function flatten end
     unsafe_flattento!(A_flat, A, sz_inner)
 end
 
+
 @inline function flattento!(A::AbsArr{<:Any, L}, B::AbsArr{<:AbsArr{<:Any,M},N}) where {L,M,N}
     L == M + N || throw(ArgumentError("ndims(A) != inner_ndims(B)"))
     sz_inner = inner_size(B)
-    inner_size(A) == sz_inner || throw(DimensionMismatch("inner_size(A) != inner_size(B)"))
+    size(A) == (sz_inner..., size(B)...)|| throw(DimensionMismatch("inner_size(A) != inner_size(B)"))
     unsafe_flattento!(A, B, sz_inner)
 end
 
@@ -48,32 +47,36 @@ will fall back to `flatten(A)`.
 function flatview end
 
 @inline flatview(A::AbsArr) = A
-# TODO: Implement flatview on generic nested arrays via new `FlatView`, using
-# deepgetindex to implement getindex, etc.
+# TODO: Lazy flatview?
 @inline flatview(A::AbsArr{<:AbsArr}) = flatten(A)
 
 
 """
-    inner_eltype(A::AbstractArray{<:AbstractArray{T}})
-    inner_eltype(::Type{<:AbstractArray{<:AbstractArray{T}}})
+    inner_eltype(A::AbstractArray{<:AbstractArray})
+    inner_eltype(::Type{<:AbstractArray{<:AbstractArray}})
 
-Returns `T`, the element type of the element arrays of `A`.
+Returns the element type of the element arrays of `A`.
+Equivalent to `eltype(eltype(A))`.
 """
 function inner_eltype end
 
-@inline inner_eltype(::Type{<:AbsArr{<:AbsArr{T}}}) where {T} = T
+@inline inner_eltype(A::AbsArr) = eltype(eltype(A))
 @inline inner_eltype(A::AbsArr) = inner_eltype(typeof(A))
 
 
 """
-    inner_ndims(A::AbstractArray{<:AbstractArray{T,N}})
-    inner_ndims(::Type{<:AbstractArray{<:AbstractArray{T,N}}})
+    inner_ndims(A::AbstractArray{<:AbstractArray})
+    inner_ndims(::Type{<:AbstractArray{<:AbstractArray}})
 
-Returns `N`, the dimensionality of the element arrays of `A`.
+Returns the dimensionality of the element arrays of `A`.
+Throws an error if the elements of `A` do not have equal dimensionality.
 """
 function inner_ndims end
 
 @inline inner_ndims(::Type{<:AbsArr{<:AbsArr{<:Any,N}}}) where {N} = N
+@inline function inner_ndims(::Type{<:AbsArr{<:AbsArr}})
+    throw(DimensionMismatch("The elements of A do not have equal dimensionality"))
+end
 @inline inner_ndims(A::AbsArr) = inner_ndims(typeof(A))
 
 
@@ -81,7 +84,7 @@ function inner_ndims end
     inner_size(A::AbstractArray{<:AbstractArray}[, d])
 
 Returns the size of the element arrays of `A`.
-Fails if the elements of A are not of equal size.
+Throws an error if the elements of `A` do not have equal size.
 """
 function inner_size end
 
@@ -96,10 +99,12 @@ function inner_size(A::AbsArr{<:AbsArr{<:Any,M}}) where {M}
     end
     sz
 end
-
+function inner_size(A::AbsArr{<:AbsArr})
+    throw(DimensionMismatch("The elements of A do not have equal dimensionality"))
+end
 @inline function inner_size(A::AbsArr, d::Integer)
     sz = inner_size(A)
-    d <= length(sz) ? sz[d] : 0 # TODO offset arrays
+    d <= length(sz) ? sz[d] : 1 # TODO offset arrays
 end
 
 
@@ -107,7 +112,7 @@ end
     inner_length(A::AbstractArray{<:AbstractArray})
 
 Returns the common length of the element arrays of `A`.
-Fails if the element arrays do not have equal size.
+Throws an error if the element arrays of `A` do not have equal size.
 """
 function inner_length end
 
@@ -118,11 +123,11 @@ function inner_length end
     inner_axes(A::AbstractArray{<:AbstractArray}[, d])
 
 Returns the common length of the element arrays of `A`.
-Fails if the element arrays do not have equal axes.
+Throws an error if the element arrays of `A` do not have equal axes.
 """
 function inner_axes end
 
-function inner_axes(A::AbsArr{<:AbsArr})
+function inner_axes(A::AbsArr{<:AbsArr{<:Any, M}}) where {M}
     if isempty(A)
         # TODO this would be wrong for offset arrays?
         ax = ntuple(_ -> Base.OneTo(0), Val(M))
@@ -133,6 +138,9 @@ function inner_axes(A::AbsArr{<:AbsArr})
         end
     end
     ax
+end
+function inner_axes(A::AbsArr{<:AbsArr})
+    throw(DimensionMismatch("The elements of A do not have equal dimensionality"))
 end
 
 @inline function inner_axes(A::AbsArr, d::Integer)

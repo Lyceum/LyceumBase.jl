@@ -90,7 +90,6 @@ end
 end
 
 
-
 @inline Base.size(A::NestedView) = back_tuple(size(A.parent), Val(ndims(A)))
 
 @inline Base.axes(A::NestedView) = back_tuple(axes(A.parent), Val(ndims(A)))
@@ -117,7 +116,6 @@ end
 end
 
 
-
 function Base.deepcopy(A::NestedView{M,T,N,P}) where {M,T,N,P}
     NestedView{M,T,N,P}(deepcopy(A.parent))
 end
@@ -135,7 +133,6 @@ end
 end
 
 
-
 function Base.append!(A::NestedView{M,<:Any,N}, B::NestedView{M,<:Any,N}) where {M,N}
     inner_size(A) == inner_size(B) || throw(DimensionMismatch("inner_size(A) != inner_size(B)"))
     append!(A.parent, B.parent)
@@ -149,7 +146,6 @@ function Base.append!(A::NestedView{M,<:Any,N}, B::AbsArr{<:AbsArr{<:Any,M},N}) 
     end
     A
 end
-
 
 
 const NestedVector{M,T,P,F,R} = NestedView{M,T,1,P,F,R}
@@ -181,7 +177,6 @@ end
 end
 
 
-
 """
     innerview(A::AbstractArray{M+N}, ::Val{M})
     innerview(A::AbstractArray{M+N}, M::Integer)
@@ -209,14 +204,13 @@ function outerview end
 end
 @inline outerview(A::AbsArr, M::Integer) = outerview(A, Val(convert(Int, M)))
 
-
 """
     flatview(A::NestedView{M,T,N,P}) --> Array{eltype(T),M+N}
 
 Returns the array of dimensionality `M + N` wrapped by `A`. The shape of
 the result may be freely changed without breaking the inner consistency of `A`.
 """
-@inline flatview(A::NestedView) = A.parent
+@inline flatview(A::NestedView) = parent(A)
 
 @inline inner_eltype(::Type{<:NestedView{<:Any,T}}) where {T} = eltype(T)
 
@@ -229,6 +223,7 @@ end
 @inline function inner_axes(A::NestedView{M}) where {M}
     front_tuple(axes(A.parent), Val(M))
 end
+
 
 @inline function UnsafeArrays.unsafe_uview(A::NestedView{M}) where {M}
     NestedView{M}(uview(A.parent))
