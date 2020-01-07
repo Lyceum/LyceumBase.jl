@@ -60,7 +60,7 @@ Equivalent to `eltype(eltype(A))`.
 """
 function inner_eltype end
 
-@inline inner_eltype(A::AbsArr) = eltype(eltype(A))
+@inline inner_eltype(::Type{A}) where {A <: AbsArr} = eltype(eltype(A))
 @inline inner_eltype(A::AbsArr) = inner_eltype(typeof(A))
 
 
