@@ -1,7 +1,7 @@
 module SpecialArrays
 
 using UnsafeArrays, Adapt, Shapes
-using Base: @propagate_inbounds, @pure, front, last, @_inline_meta, ViewIndex, require_one_based_indexing
+using Base: @propagate_inbounds, @pure, @_inline_meta, ViewIndex, require_one_based_indexing
 using Base.MultiplicativeInverses: SignedMultiplicativeInverse
 
 const AbsVec{T} = AbstractVector{T}
@@ -28,7 +28,7 @@ include("nestedarrays/util.jl")
 include("nestedarrays/functions.jl")
 include("nestedarrays/nestedview.jl")
 
-export ElasticBuffer, shrinkend!, growend!, resizeend!
+export ElasticBuffer, shrinklastdim!, growlastdim!, resizelastdim!
 include("elasticbuffer.jl")
 
 export BatchedVector

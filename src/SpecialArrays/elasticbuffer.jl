@@ -16,57 +16,105 @@ struct ElasticBuffer{T,N,M} <: DenseArray{T,N}
     kernel_length::SignedMultiplicativeInverse{Int}
     data::Vector{T}
 
-    function ElasticBuffer(kernel_size::Dims{M}, data::Vector{T}) where {T,M}
+    function ElasticBuffer{T,N,M}(kernel_size::Dims{M}, data::Vector{T}) where {T,N,M}
+        check_elasticbuffer_parameters(T, Val(N), Val(M))
         kernel_length = SignedMultiplicativeInverse{Int}(prod(kernel_size))
         if rem(length(eachindex(data)), kernel_length) != 0
             throw(ArgumentError("length(data) must be integer multiple of prod(kernel_size)"))
         end
-        new{T,M+1,M}(kernel_size, kernel_length, data)
+        new{T,N,M}(kernel_size, kernel_length, data)
     end
 end
 
-
-ElasticBuffer{T}(::UndefInitializer, dims::Integer...) where {T} = ElasticBuffer{T}(undef, dims)
-
-function ElasticBuffer{T}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N}
-    ElasticBuffer{T}(undef, convert(NTuple{N,Int}, dims))
+@inline function ElasticBuffer{T,N}(kernel_size::Dims{M}, data::Vector{T}) where {T,N,M}
+    ElasticBuffer{T,N,M}(kernel_size, data)
 end
 
-function ElasticBuffer{T}(::UndefInitializer, dims::Dims{N}) where {T,N}
-    kernel_size, size_lastdim = frontlast(dims)
-    data = Vector{T}(undef, prod(kernel_size) * size_lastdim)
-    ElasticBuffer(kernel_size, data)
+@inline function ElasticBuffer{T}(kernel_size::Dims{M}, data::Vector{T}) where {T,M}
+    ElasticBuffer{T,M+1,M}(kernel_size, data)
+end
+
+@inline function ElasticBuffer(kernel_size::Dims{M}, data::Vector{T}) where {T,M}
+    ElasticBuffer{T,M+1,M}(kernel_size, data)
 end
 
 
-@propagate_inbounds function ElasticBuffer{T,N,M}(A::AbstractArray) where {T,N,M}
-    M == N - 1 || throw(ArgumentError("ElasticBuffer{$T,$N,$M} does not satisfy requirement M == N - 1"))
-    ElasticBuffer{T,N}(A)
+@inline function ElasticBuffer{T,N,M}(::UndefInitializer, dims::Vararg{Integer,N}) where {T,N,M}
+    ElasticBuffer{T,N,M}(undef, dims)
 end
 
-@propagate_inbounds function ElasticBuffer{T,N}(A::AbstractArray{U,N}) where {T,N,U}
-    copyto!(ElasticBuffer{T}(undef, size(A)...), A)
+@inline function ElasticBuffer{T,N}(::UndefInitializer, dims::Vararg{Integer,N}) where {T,N}
+    ElasticBuffer{T,N}(undef, dims)
 end
 
-@propagate_inbounds ElasticBuffer{T}(A::AbstractArray{U,N}) where {T,N,U} = ElasticBuffer{T,N}(A)
+@inline function ElasticBuffer{T}(::UndefInitializer, dims::Integer...) where {T}
+    ElasticBuffer{T}(undef, dims)
+end
 
-@propagate_inbounds ElasticBuffer(A::AbstractArray{T,N}) where {T,N} = ElasticBuffer{T,N}(A)
+
+@inline function ElasticBuffer{T,N,M}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N,M}
+    ElasticBuffer{T,N,M}(undef, convert(Dims{N}, dims))
+end
+
+@inline function ElasticBuffer{T,N}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N}
+    ElasticBuffer{T,N}(undef, convert(Dims{N}, dims))
+end
+
+@inline function ElasticBuffer{T}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N}
+    ElasticBuffer{T,N}(undef, convert(Dims{N}, dims))
+end
+
+
+@inline function ElasticBuffer{T,N,M}(::UndefInitializer, dims::Dims{N}) where {T,N,M}
+    ElasticBuffer{T,N,M}(front(dims), Vector{T}(undef, prod(dims)))
+end
+
+@inline function ElasticBuffer{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
+    ElasticBuffer{T,N,N-1}(undef, dims)
+end
+
+@inline function ElasticBuffer{T}(::UndefInitializer, dims::Dims{N}) where {T,N}
+    ElasticBuffer{T,N}(undef, dims)
+end
+
+
+@propagate_inbounds function ElasticBuffer{T,N,M}(A::AbstractArray{<:Any, N}) where {T,N,M}
+    ElasticBuffer{T,N,M}(front(size(A)), copyto!(Vector{T}(undef, length(A)), A))
+end
+
+@propagate_inbounds function ElasticBuffer{T,N}(A::AbstractArray) where {T,N}
+    ElasticBuffer{T,N,N-1}(A)
+end
+
+@propagate_inbounds function ElasticBuffer{T}(A::AbstractArray) where {T}
+    ElasticBuffer{T,ndims(A)}(A)
+end
+
+@propagate_inbounds ElasticBuffer(A::AbstractArray) = ElasticBuffer{eltype(A)}(A)
 
 
 Base.convert(::Type{T}, A::AbstractArray) where {T<:ElasticBuffer} = A isa T ? A : T(A)
 
-
 @inline function Base.:(==)(A::ElasticBuffer{<:Any,N,M}, B::ElasticBuffer{<:Any,N,M}) where {N,M}
     A.kernel_size == B.kernel_size && A.data == B.data
 end
+@inline Base.:(==)(A::ElasticBuffer, B::ElasticBuffer) = false
 
 @inline function Base.size(A::ElasticBuffer)
     (A.kernel_size..., div(length(eachindex(A.data)), A.kernel_length))
 end
+@inline function Base.size(A::ElasticBuffer, d)
+    if d == ndims(A)
+        div(length(eachindex(A.data)), A.kernel_length)
+    else
+        A.kernel_size[d]
+    end
+end
 
 @inline Base.length(A::ElasticBuffer) = length(A.data)
 
-@inline Base.IndexStyle(::Type{<:ElasticBuffer}) = IndexLinear()
+
+Base.IndexStyle(::Type{<:ElasticBuffer}) = IndexLinear()
 
 @propagate_inbounds function Base.getindex(A::ElasticBuffer, i::Integer)
     @boundscheck checkbounds(A, i)
@@ -78,9 +126,8 @@ end
     @inbounds setindex!(A.data, x, i)
 end
 
-# TODO
-#@inline Base.parent(A::ElasticBuffer) = reshape(A.data, size(A))
-@inline Base.parent(A::ElasticBuffer) = A.data
+
+@inline Base.parent(A::ElasticBuffer) = reshape(A.data, size(A))
 
 @inline Base.dataids(A::ElasticBuffer) = Base.dataids(A.data)
 
@@ -130,31 +177,29 @@ end
     dest
 end
 
-#@inline function Base.similar(A::ElasticBuffer, T::Type, dims::Dims)
-#    ElasticBuffer{T}(undef, dims)
-#end
-# TODO
-@inline function Base.similar(::Type{<:ElasticBuffer}, T::Type, dims::Dims)
-    ElasticBuffer{T}(undef, dims)
-end
 
+@inline function Base.similar(A::ElasticBuffer, T::Type, dims::Dims{N}) where {N}
+    similar(A.data, T, dims)
+end
 
 @inline Base.unsafe_convert(::Type{Ptr{T}}, A::ElasticBuffer{T}) where T = Base.unsafe_convert(Ptr{T}, A.data)
+
 @inline Base.pointer(A::ElasticBuffer, i::Integer) = pointer(A.data, i)
 
-@inline function growend!(B::ElasticBuffer, n::Integer = 1)
+
+@inline function growlastdim!(B::ElasticBuffer, n::Integer)
     n < 0 && throw(DomainError(n, "n must be positive"))
-    resizeend!(B, n)
+    resizelastdim!(B, size(B, ndims(B)) + n)
 end
 
-@inline function shrinkend!(B::ElasticBuffer, n::Integer = 1)
+@inline function shrinklastdim!(B::ElasticBuffer, n::Integer)
     n < 0 && throw(DomainError(n, "n must be positive"))
-    resizeend!(B, -n)
+    resizelastdim!(B, size(B, ndims(B)) - n)
 end
 
-@inline function resizeend!(B::ElasticBuffer, n::Integer)
-    kernel_size, size_lastdim = frontlast(size(B))
-    dims = (kernel_size..., size_lastdim + n)
+@inline function resizelastdim!(B::ElasticBuffer, n::Integer)
+    kernel_size = front(size(B))
+    dims = (kernel_size..., n)
     resize!(B, dims...)
 end
 
@@ -163,4 +208,12 @@ end
     kernel_size, size_lastdim = frontlast(dims)
     kernel_size != A.kernel_size && throw(ArgumentError("Can only resize last dimension of an ElasticBuffer"))
     kernel_size, size_lastdim
+end
+
+@generated function check_elasticbuffer_parameters(::Type{T}, ::Val{N}, ::Val{M}) where {T,N,M}
+    !isa(N, Int) && return :(throw(ArgumentError("ElasticBuffer parameter N must be of type Int")))
+    !isa(M, Int) && return :(throw(ArgumentError("ElasticBuffer parameter M must be of type Int")))
+    if M != N - 1
+        return :(throw(ArgumentError("ElasticBuffer{$T,$N,$M} does not satisfy requirement M == N - 1")))
+    end
 end
