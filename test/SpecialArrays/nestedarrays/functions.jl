@@ -34,6 +34,7 @@
 
         let A = Vector{Vector{Int}}()
             @test @inferred(inner_ndims(A)) == 1
+            @test @inferred(inner_ndims(typeof(A))) == 1
 
             @test @inferred(inner_size(A)) == (0, )
             @test @inferred(inner_size(A, 1)) == 0
@@ -45,6 +46,7 @@
 
             @test @inferred(inner_length(A)) == 0
             @test @inferred(inner_eltype(A)) == Int
+            @test @inferred(inner_eltype(typeof(A))) == Int
         end
 
         let A = [zeros(2), zeros(4, 6)]
