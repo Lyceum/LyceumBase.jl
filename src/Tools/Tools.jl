@@ -3,11 +3,12 @@ module Tools
 # stdlib
 using LibGit2, Pkg, Statistics, Random, LinearAlgebra, InteractiveUtils, Logging, Dates
 using Future: randjump
+using Test: @test
 
 # 3rd party
 import UnicodePlots
-#using UnsafeArrays, StaticArrays, StatsBase, EllipsisNotation, ElasticArrays, MacroTools, JLSO, Parameters
 using UnsafeArrays, StaticArrays, EllipsisNotation, ElasticArrays, MacroTools, JLSO, Parameters, Adapt
+using BenchmarkTools: @benchmark
 
 # Lyceum
 import UniversalLogger: finish!
@@ -25,7 +26,7 @@ export
     wraptopi,
     tuplecat,
     Converged,
-    noalloc,
+    @noalloc,
     mkgoodpath,
     filter_nt,
     KahanSum

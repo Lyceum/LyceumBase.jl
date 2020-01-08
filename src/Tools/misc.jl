@@ -128,7 +128,7 @@ LyceumBase.reset!(x::Converged{T}) where {T} =
 macro noalloc(expr)
     quote
         local tmp = @benchmark $expr samples = 1 evals = 1
-        iszero(tmp.allocs)
+        @test iszero(tmp.allocs)
     end
 end
 

@@ -1,25 +1,32 @@
 const TJUMP = big(10)^20
 
-function seed_threadrngs!(seed = Random.make_seed(); jump = TJUMP)
+@inline function seed_threadrngs!(seed = Random.make_seed(); jump = TJUMP)
     seed_threadrngs!(Random.THREAD_RNGs, seed, jump = jump)
 end
 
-function seed_threadrngs!(
+@noinline function seed_threadrngs!(
     rngs::Vector{MersenneTwister},
-    seed = Random.make_seed();
-    jump = TJUMP,
+    seed::Union{Integer, Array{UInt32, 1}} = Random.make_seed();
+    jump::Integer = TJUMP,
 )
+    nt = Threads.nthreads()
     Threads.threadid() == 1 || throw(ArgumentError("Can only call `seed_threadrngs!` from main thread"))
-    if length(rngs) != Threads.nthreads()
+    if length(rngs) != nt
         throw(ArgumentError("length(rngs) must equal Threads.nthreads()"))
     end
 
-    rngs[1] = MersenneTwister(seed)
-    Threads.@threads for _ = 1:Threads.nthreads()
+    MT = MersenneTwister(seed)
+    rngs[1] = MT
+    Threads.@threads for _ = 1:nt
         tid = Threads.threadid()
         if tid > 1
-            rngs[tid] = randjump(rngs[1], jump * (tid - 1))
+            @assert isassigned(rngs, 1)
+            rngs[tid] = randjump(MT, jump * (tid - 1))
+            @assert isassigned(rngs, tid)
         end
+    end
+    @assert all(1:nt) do tid
+        isassigned(rngs, tid)
     end
     rngs
 end
