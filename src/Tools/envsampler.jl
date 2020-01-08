@@ -161,13 +161,17 @@ function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnvironmen
     @uviews traj begin
         st, ot, at =
             view(traj.states, :, t), view(traj.observations, :, t), view(traj.actions, :, t)
+
         getstate!(st, env)
         getobs!(ot, env)
-
         actionfn!(at, st, ot)
-        #setaction!(env, at)
-        r, e, done = step!(env, at)
-        #step!(env)
+
+        setaction!(env, at)
+        step!(env)
+
+        r = getreward(st, at, ot, env)
+        e = geteval(st, at, ot, env)
+        done = isdone(st, at, ot, env)
 
         traj.rewards[t] = r
         traj.evaluations[t] = e
