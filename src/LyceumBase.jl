@@ -40,7 +40,7 @@ cache efficiency/performance.
 """
 function tconstruct(T::Type, n::Integer, args...; kwargs...)
     n > 0 || throw(ArgumentError("n must be > 0"))
-    ntuple(_ -> T(args...; kwargs...), N)
+    ntuple(_ -> T(args...; kwargs...), n)
 end
 export tconstruct
 
