@@ -227,12 +227,6 @@ function _addkbn(x, y)
 end
 
 
-#perturb(s::Sampleable, A::AbstractArray) = perturb(Random.default_rng(), s, A)
-#@inline function perturb(rng::AbstractRNG, s::Sampleable, A::AbstractArray)
-#    perturb!(rng, s, copy(A))
-#end
-
-
 perturb!(A::AbstractArray) = perturb!(Random.default_rng(), A)
 perturbn!(A::AbstractArray) = perturb!(Random.default_rng(), A)
 perturb!(s::Sampleable, A::AbstractArray) = perturb!(Random.default_rng(), s, A)
