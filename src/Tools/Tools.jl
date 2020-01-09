@@ -8,6 +8,7 @@ using Test: @test
 # 3rd party
 import UnicodePlots
 using UnsafeArrays, StaticArrays, EllipsisNotation, ElasticArrays, MacroTools, JLSO, Parameters, Adapt
+using Distributions: Sampleable
 using BenchmarkTools: @benchmark
 
 # Lyceum
@@ -29,7 +30,11 @@ export
     @noalloc,
     mkgoodpath,
     filter_nt,
-    KahanSum
+    KahanSum,
+    perturb!,
+    perturbn!,
+    perturb,
+    perturbn
 
 include("projectmeta.jl")
 
