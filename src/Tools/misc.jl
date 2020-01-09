@@ -225,3 +225,39 @@ function _addkbn(x, y)
     c = ifelse(abs(x) >= abs(y), (x - t) + y, (y - t) + x)
     t - c
 end
+
+
+#perturb(s::Sampleable, A::AbstractArray) = perturb(Random.default_rng(), s, A)
+#@inline function perturb(rng::AbstractRNG, s::Sampleable, A::AbstractArray)
+#    perturb!(rng, s, copy(A))
+#end
+
+
+perturb!(A::AbstractArray) = perturb!(Random.default_rng(), A)
+perturbn!(A::AbstractArray) = perturb!(Random.default_rng(), A)
+perturb!(s::Sampleable, A::AbstractArray) = perturb!(Random.default_rng(), s, A)
+
+perturb(rng::AbstractRNG, A::AbstractArray) = perturb!(rng, copy(A))
+perturbn(rng::AbstractRNG, A::AbstractArray) = perturb!(rng, copy(A))
+perturb(rng::AbstractRNG, s::Sampleable, A::AbstractArray) = perturb!(rng, s, copy(A))
+
+function perturb!(rng::AbstractRNG, A::AbstractArray)
+    for i in eachindex(A)
+        @inbounds A[i] += rand(rng)
+    end
+    A
+end
+
+function perturbn!(rng::AbstractRNG, A::AbstractArray)
+    for i in eachindex(A)
+        @inbounds A[i] += randn(rng)
+    end
+    A
+end
+
+function perturb!(rng::AbstractRNG, s::Sampleable, A::AbstractArray)
+    for i in eachindex(A)
+        @inbounds A[i] += rand(rng, s)
+    end
+    A
+end

@@ -32,3 +32,30 @@ end
 @test wraptopi(-pi) ≈ pi
 @test wraptopi(pi + 0.1) ≈ -pi + 0.1
 @test wraptopi(-pi - 0.1) ≈ pi - 0.1
+
+@testset "perturb/perturb!" begin
+    @test let A = rand(100), B = copy(A), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
+        perturb!(r1, A) == B .+ rand(r2, length(B))
+    end
+    @test let A = rand(100), B = copy(A), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
+        perturbn!(r1, A) == B .+ randn(r2, length(B))
+    end
+    @test let A = rand(100), B = copy(A), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
+        d = Uniform(-0.1, 0.2)
+        perturb!(r1, d, A) == B .+ rand(r2, d, length(B))
+    end
+
+    @test let A = rand(100), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
+        B = perturb(r2, A)
+        perturb!(r1, A) == B
+    end
+    @test let A = rand(100), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
+        B = perturbn(r2, A)
+        perturb!(r1, A) == B
+    end
+    @test let A = rand(100), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
+        d = Uniform(-0.1, 0.2)
+        B = perturb(r2, d, A)
+        perturb!(r1, d, A) == B
+    end
+end
