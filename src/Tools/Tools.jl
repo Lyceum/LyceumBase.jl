@@ -58,4 +58,7 @@ export BatchedArray, flatview, batchlike
 include("envsampler.jl")
 export EnvSampler, sample!, TrajectoryBuffer, grow!
 
+include("math.jl")
+export mmtv, mmtv!
+
 end # module

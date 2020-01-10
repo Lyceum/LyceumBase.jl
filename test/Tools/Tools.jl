@@ -11,4 +11,7 @@ using Shapes, ElasticArrays, UnsafeArrays, Random, KahanSummation, LinearAlgebra
     @testset "misc" begin
         include("misc.jl")
     end
+    @testset "math" begin
+        include("math.jl")
+    end
 end
