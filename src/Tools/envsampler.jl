@@ -3,20 +3,20 @@ struct TrajectoryBuffer{B1<:ElasticBuffer,B2<:ElasticBuffer}
     terminal::B2
 end
 
-function TrajectoryBuffer(env::AbstractEnv; sizehint::Maybe{Integer} = nothing, dtype::Maybe{DataType} = nothing)
+function TrajectoryBuffer(env::AbstractEnvironment; sizehint::Maybe{Integer} = nothing, dtype::Maybe{DataType} = nothing)
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
 
     trajectory = ElasticBuffer(
         states = sp.statespace,
-        observations = sp.observationspace,
+        observations = sp.obsspace,
         actions = sp.actionspace,
         rewards = sp.rewardspace,
-        evaluations = sp.evaluationspace
+        evaluations = sp.evalspace
     )
 
     terminal = ElasticBuffer(
         states = sp.statespace,
-        observations = sp.observationspace,
+        observations = sp.obsspace,
         dones = Bool,
         lengths = Int,
     )
@@ -30,7 +30,7 @@ function TrajectoryBuffer(env::AbstractEnv; sizehint::Maybe{Integer} = nothing, 
 end
 
 
-struct EnvSampler{N, E<:AbstractEnv,B<:TrajectoryBuffer,BA}
+struct EnvSampler{N, E<:AbstractEnvironment,B<:TrajectoryBuffer,BA}
     envs::NTuple{N,E}
     bufs::NTuple{N,B}
     batch::BA
@@ -38,8 +38,8 @@ struct EnvSampler{N, E<:AbstractEnv,B<:TrajectoryBuffer,BA}
     count::Base.RefValue{Int}
 end
 
-function EnvSampler(envs; sizehint::Maybe{Integer} = nothing, dtype::Maybe{DataType} = nothing)
-    envs = Tuple(envs)::TupleN{AbstractEnv}
+function EnvSampler(env_tconstructor; sizehint::Maybe{Integer} = nothing, dtype::Maybe{DataType} = nothing)
+    envs = Tuple(env_tconstructor(Threads.nthreads()))
     bufs = ntuple(_ -> TrajectoryBuffer(first(envs), sizehint=sizehint, dtype=dtype), length(envs))
     batch = makebatch(first(envs), sizehint=sizehint, dtype=dtype)
     EnvSampler(envs, bufs, batch, ReentrantLock(), Ref(0))
@@ -162,8 +162,7 @@ function _threadsample!(
     nothing
 end
 
-# TODO note why not inbounds on entire block
-function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnv) where {F}
+function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnvironment) where {F}
     grow!(traj) # extend our buffer by one to accomdate the next sample
     t = lastindex(traj)
     @uviews traj begin
@@ -175,6 +174,7 @@ function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnv) where
         getobs!(ot, env)
 
         actionfn!(at, st, ot)
+        setaction!(env, at)
         step!(env)
 
         r = getreward(st, at, ot, env)
@@ -187,7 +187,7 @@ function rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnv) where
     end
 end
 
-function terminate_trajectory!(term::ElasticBuffer, env::AbstractEnv, done::Bool, trajlength::Int)
+function terminate_trajectory!(term::ElasticBuffer, env::AbstractEnvironment, done::Bool, trajlength::Int)
     grow!(term) # extend our terminal buffer by one
     i = lastindex(term)
     @uviews term begin
@@ -201,17 +201,17 @@ function terminate_trajectory!(term::ElasticBuffer, env::AbstractEnv, done::Bool
 end
 
 # allocate a batch for env's spaces
-function makebatch(env::AbstractEnv; sizehint::Union{Integer,Nothing} = nothing, dtype::Maybe{DataType} = nothing)
+function makebatch(env::AbstractEnvironment; sizehint::Union{Integer,Nothing} = nothing, dtype::Maybe{DataType} = nothing)
     # optionally override storage type of env's spaces to be dtype
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
     batch = (
         states = BatchedArray(sp.statespace),
-        observations = BatchedArray(sp.observationspace),
+        observations = BatchedArray(sp.obsspace),
         actions = BatchedArray(sp.actionspace),
         rewards = BatchedArray(sp.rewardspace),
-        evaluations = BatchedArray(sp.evaluationspace),
+        evaluations = BatchedArray(sp.evalspace),
         terminal_states = BatchedArray(sp.statespace),
-        terminal_observations = BatchedArray(sp.observationspace),
+        terminal_observations = BatchedArray(sp.obsspace),
         dones = Vector{Bool}(),
     )
     sizehint !== nothing && foreach(el -> sizehint!(el, sizehint), batch)
