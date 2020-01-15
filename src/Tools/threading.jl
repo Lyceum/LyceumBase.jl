@@ -25,7 +25,7 @@ end
             @assert isassigned(rngs, tid)
         end
     end
-    @assert all(1:nt) do tid
+    @assert all(eachindex(rngs)) do tid
         isassigned(rngs, tid)
     end
     rngs
