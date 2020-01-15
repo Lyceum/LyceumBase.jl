@@ -17,34 +17,20 @@
 end
 
 @testset "seed_threadrngs!" begin
+    rngs = [MersenneTwister() for _ = 1:Threads.nthreads()]
     x = zeros(1000)
     y = zeros(1000)
-    seed_threadrngs!(1)
-    Threads.@threads for i=1:length(x)
-       y[i] = rand()
+    seed_threadrngs!(rngs, 1)
+    Threads.@threads for i = 1:length(x)
+       x[i] = rand(rngs[Threads.threadid()])
     end
-    seed_threadrngs!(1)
-    Threads.@threads for i=1:length(x)
-       x[i] = rand()
+    seed_threadrngs!(rngs, 1)
+    Threads.@threads for i = 1:length(x)
+       y[i] = rand(rngs[Threads.threadid()])
     end
     @test x == y
-
-    states = map(rng -> rng.state, Random.THREAD_RNGs)
+    states = map(rng -> rng.state, rngs)
     @test length(unique(states)) == Threads.nthreads()
-
-    # Test that naievely calling Random.seed! in a single thread doesn't
-    # seed all threads
-    x = zeros(1000)
-    y = zeros(1000)
-    Random.seed!(1)
-    Threads.@threads for i=1:length(x)
-       y[i] = rand()
-    end
-    Random.seed!(1)
-    Threads.@threads for i=1:length(x)
-       x[i] = rand()
-    end
-    @test x != y
 end
 
 @testset "nblasthreads/with_blasthreads" begin
