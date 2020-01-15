@@ -17,32 +17,18 @@
 end
 
 @testset "seed_threadrngs!" begin
-    # Test that naievely calling Random.seed! in a single thread doesn't
-    # seed all threads
+    rngs = [MersenneTwister() for _ = 1:Threads.nthreads()]
     x = zeros(1000)
     y = zeros(1000)
-    Random.seed!(1)
-    Threads.@threads for i=1:length(x)
-       y[i] = rand()
+    seed_threadrngs!(rngs, 1)
+    Threads.@threads for _ = 1:length(x)
+       y[i] = rand(rngs[Threads.threadid()])
     end
-    Random.seed!(1)
-    Threads.@threads for i=1:length(x)
-       x[i] = rand()
-    end
-    @test x != y
-
-    x = zeros(1000)
-    y = zeros(1000)
-    seed_threadrngs!(1)
-    Threads.@threads for i=1:length(x)
-       y[i] = rand()
-    end
-    seed_threadrngs!(1)
-    Threads.@threads for i=1:length(x)
-       x[i] = rand()
+    seed_threadrngs!(rngs, 1)
+    Threads.@threads for _ = 1:length(x)
+       y[i] = rand(rngs[Threads.threadid()])
     end
     @test x == y
-
     states = map(rng -> rng.state, Random.THREAD_RNGs)
     @test length(unique(states)) == Threads.nthreads()
 end
