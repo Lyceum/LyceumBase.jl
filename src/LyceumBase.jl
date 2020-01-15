@@ -46,7 +46,6 @@ export tconstruct
 
 export
     AbstractEnvironment,
-    EnvSpaces,
 
     statespace,
     getstate!,

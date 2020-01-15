@@ -1,9 +1,13 @@
+"""
+    AbstractEnvironment
+
+Supertype for all environments.
+"""
 abstract type AbstractEnvironment end
 
 const EnvSpaces = NamedTuple{
     (:statespace, :obsspace, :actionspace, :rewardspace, :evalspace),
 }
-
 
 
 """
@@ -57,8 +61,6 @@ See also: [`statespace`](@ref), [`getstate!`](@ref), [`getstate`](@ref).
     new, passed-in state.
 """
 @mustimplement setstate!(env::AbstractEnvironment, state)
-
-
 
 
 """
@@ -136,7 +138,6 @@ See also: [`actionspace`](@ref), [`getaction!`](@ref), [`setaction!`](@ref).
     a
 end
 
-
 """
     setaction!(env::AbstractEnvironment, action)
 
@@ -151,7 +152,6 @@ See also: [`actionspace`](@ref), [`getaction!`](@ref), [`getaction`](@ref).
     new, passed-in action.
 """
 @mustimplement setaction!(env::AbstractEnvironment, action)
-
 
 
 """
@@ -203,7 +203,6 @@ See also: [`rewardspace`](@ref).
 end
 
 
-
 """
     evalspace(env::AbstractEnvironment) --> Shapes.AbstractShape
 
@@ -216,7 +215,6 @@ See also: [`geteval`](@ref).
     Currently, only scalar evaluation spaces are supported (e.g. [`Shapes.ScalarShape`](@ref)).
 """
 @inline evalspace(env::AbstractEnvironment) = ScalarShape{Float64}()
-
 
 """
     geteval(state, action, observation, env::AbstractEnvironment)
@@ -262,7 +260,6 @@ See also: [`evalspace`](@ref).
 end
 
 
-
 """
     reset!(env::AbstractEnvironment)
 
@@ -283,7 +280,6 @@ Reset `env` to a random state with zero/passive controls.
 @propagate_inbounds randreset!(env::AbstractEnvironment) = randreset!(Random.default_rng(), env)
 
 
-
 """
     step!(env::AbstractEnvironment)
 
@@ -292,7 +288,6 @@ Advance `env` forward by one timestep.
 See also: [`timestep`](@ref).
 """
 @mustimplement step!(env::AbstractEnvironment)
-
 
 
 """
@@ -322,7 +317,6 @@ Internally calls `isdone(getstate(env), getaction(env), getobs(env), env)`.
 @propagate_inbounds function isdone(env::AbstractEnvironment)
     isdone(getstate(env), getaction(env), getobs(env), env)
 end
-
 
 
 """
@@ -355,7 +349,19 @@ t2 = time(env)
 """
 @mustimplement timestep(env::AbstractEnvironment)
 
+"""
+    spaces(env::AbstractEnvironment)
 
+Return a `NamedTuple` of containing all of `env`'s spaces.
+
+# Examples
+
+```julia
+env = FooEnv()
+sp = spaces(env)
+@assert statespace(env) == sp.statespace
+```
+"""
 function spaces(env::AbstractEnvironment)
     EnvSpaces((
         statespace(env),
