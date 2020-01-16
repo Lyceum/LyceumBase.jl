@@ -106,7 +106,7 @@ function Base.similar(A::BatchedArray)
 end
 
 function batchlike(A::BatchedArray{T,N}, other::AbstractArray{U,N}) where {T,U,N}
-    size(A.parent) == size(other) || error("Size of other must match size(flatview(B))")
+    Base.front(size(A.parent)) == Base.front(size(other)) || error("Size of other must match size(flatview(B))")
     BatchedArray(other, copy(A.offsets), A.kernel_size)
 end
 
