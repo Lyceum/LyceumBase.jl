@@ -31,6 +31,7 @@ UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
 [compat]
 Adapt = "1"
 BenchmarkTools = "0.4.3"
+Distributions = "0.22.2"
 ElasticArrays = "1"
 EllipsisNotation = "0.4"
 JLSO = "1.3"
