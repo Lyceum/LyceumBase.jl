@@ -453,6 +453,9 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
                     e === setstate!(e, rand(statespace(e)))
                 end
                 @test let e = makeenv(), x = rand(statespace(e))
+                    randreset!(e)
+                    getstate!(x, e)
+                    step!(e)
                     setstate!(e, x)
                     x == getstate!(rand(statespace(e)), e) == getstate(e)
                 end
@@ -475,7 +478,10 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
                 @test let e = makeenv()
                     e === setaction!(e, rand(actionspace(e)))
                 end
-                @test let e = makeenv(), x = rand(actionspace(e))
+                @test let e = makeenv(), x = getaction(e)
+                    # this is a bad test; setaction can do anything to the input
+                    # so it can readily end up being different from the input
+                    # getaction can just grab d.ctrl after setaction's manipulations...
                     setaction!(e, x)
                     x == getaction!(rand(actionspace(e)), e) == getaction(e)
                 end
@@ -558,6 +564,7 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
                 end
 
                 let e1 = makeenv(), e2 = makeenv()
+                    reset!(e1)
                     reset!(e2)
                     @test getstate(e1) == getstate(e2)
                     @test getaction(e1) == getaction(e2)
@@ -579,7 +586,8 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
 
                     @test getstate(e1) != getstate(e2)
                     @test getaction(e1) == getaction(e2)
-                    @test getobs(e1) != getobs(e2)
+                    @test length(getobs(e1)) == 0 || (getobs(e1) != getobs(e2))
+                    # the above length check fixes demorgans gone wrong
                     # TODO For some environments, resetting state may not yield
                     # different reward/eval
                     # @test getreward(e1) != getreward(e2)
@@ -608,6 +616,8 @@ function test_env(etype::Type{<:AbstractEnvironment}, args...; kwargs...)
             # execute a random control _trajectory and check for repeatability
             let e1 = makeenv(), e2 = makeenv()
                 actions = rand(actionspace(e1), 1000)
+                reset!(e1)
+                reset!(e2)
                 t1 = _rollout(e1, actions)
                 t2 = _rollout(e2, actions)
                 reset!(e1)
