@@ -14,7 +14,7 @@ using BenchmarkTools: @benchmark
 # Lyceum
 import UniversalLogger: finish!
 using ..LyceumBase, Shapes, UniversalLogger
-using ..LyceumBase: TupleN, Maybe
+using ..LyceumBase: TupleN, Maybe, AbsMat
 
 include("misc.jl")
 export
@@ -57,5 +57,8 @@ export BatchedArray, flatview, batchlike
 
 include("envsampler.jl")
 export EnvSampler, sample!, TrajectoryBuffer, grow!
+
+include("geom.jl")
+export SPoint3D, MPoint3D
 
 end # module
