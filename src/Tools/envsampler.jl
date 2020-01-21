@@ -60,20 +60,18 @@ function sample!(
     nthreads::Integer = Threads.nthreads(),
     copy::Bool = false,
 )
-    nsamples > 0 || error("nsamples must be > 0")
-    (0 < Hmax <= nsamples) || error("Hmax must be 0 < Hmax <= nsamples")
-    (
-        0 < nthreads <= Threads.nthreads()
-    ) || error("nthreads must b 0 < nthreads < Threads.nthreads()")
+    nsamples > 0 || error("`nsamples` must be > 0")
+    0 < Hmax <= nsamples || error("`Hmax` must be in range (0, `nsamples`]")
+    if !(0 < nthreads <= Threads.nthreads())
+        error("`nthreads` must be in range (0, Threads.nthreads()]")
+    end
 
     atomiccount = Threads.Atomic{Int}(0)
     atomicidx = Threads.Atomic{Int}(1)
-
-    nthreads = _defaultnthreads(nsamples, Hmax, nthreads)
     emptybufs!(sampler)
 
     if nthreads == 1
-        _threadsample!(actionfn!, resetfn!, sampler, nsamples, Hmax)
+        _sample!(actionfn!, resetfn!, sampler, nsamples, Hmax)
     else
         @sync for _ = 1:nthreads
             Threads.@spawn _threadsample!(
@@ -93,9 +91,10 @@ function sample!(
     sampler.batch
 end
 
-function _threadsample!(actionfn!::F, resetfn!::G, sampler, nsamples, Hmax) where {F,G}
-    env = sampler.envs[Threads.threadid()]
-    buf = sampler.bufs[Threads.threadid()]
+
+function _sample!(actionfn!::F, resetfn!::G, sampler, nsamples, Hmax) where {F,G}
+    env = first(sampler.envs)
+    buf = first(sampler.bufs)
     traj = buf.trajectory
     term = buf.terminal
 
@@ -112,10 +111,8 @@ function _threadsample!(actionfn!::F, resetfn!::G, sampler, nsamples, Hmax) wher
             trajlength = 0
         end
     end
-    sampler
+    nothing
 end
-
-
 
 
 function _threadsample!(
@@ -137,12 +134,6 @@ function _threadsample!(
         done = rolloutstep!(actionfn!, traj, env)
         trajlength += 1
 
-        #if atomiccount[] >= nsamples
-        #    break
-        #elseif atomiccount[] + trajlength >= nsamples
-        #    Threads.atomic_add!(atomiccount, trajlength)
-        #    terminate!(term, env, trajlength, done)
-        #    break
         if done || trajlength == Hmax
             Threads.atomic_add!(atomiccount, trajlength)
             terminate!(term, env, trajlength, done)
@@ -154,7 +145,7 @@ function _threadsample!(
             end
         end
     end
-    sampler
+    nothing
 end
 
 
@@ -208,7 +199,7 @@ function makebatch(env::AbstractEnvironment; sizehint::Union{Integer,Nothing} = 
         terminal_observations = BatchedArray(sp.obsspace),
         dones = Vector{Bool}(),
     )
-    !isnothing(sizehint) && foreach(el -> sizehint!(el, sizehint), batch)
+    sizehint !== nothing && foreach(el -> sizehint!(el, sizehint), batch)
     batch
 end
 
@@ -219,9 +210,9 @@ function collate!(sampler::EnvSampler, N::Integer, copy::Bool)
         sizehint!(b, N)
     end
 
-    #@info sum(sampler.bufs) do buf
-    #    sum(buf.terminal.lengths)
-    #end
+    @info sum(sampler.bufs) do buf
+        sum(buf.terminal.lengths)
+    end
 
     count = 0
     togo = N - count
@@ -272,8 +263,6 @@ end
 
 function _defaultnthreads(nsamples, Hmax, nthreads)
     d, r = divrem(nsamples, Hmax)
-    if r > 0
-        d += 1
-    end
+    r > 0 && (d += 1)
     min(d, nthreads)
 end
