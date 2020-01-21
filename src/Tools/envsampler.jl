@@ -3,7 +3,7 @@ struct TrajectoryBuffer{B1<:ElasticBuffer,B2<:ElasticBuffer}
     terminal::B2
 end
 
-function TrajectoryBuffer(env::AbstractEnvironment; sizehint::Union{Integer,Nothing} = nothing, dtype::Maybe{DataType} = nothing)
+function TrajectoryBuffer(env::AbstractEnvironment; sizehint::Maybe{Integer} = nothing, dtype::Maybe{DataType} = nothing)
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
 
     trajectory = ElasticBuffer(
@@ -137,17 +137,21 @@ function _threadsample!(
         done = rolloutstep!(actionfn!, traj, env)
         trajlength += 1
 
-        if atomiccount[] >= nsamples
-            break
-        elseif atomiccount[] + trajlength >= nsamples
+        #if atomiccount[] >= nsamples
+        #    break
+        #elseif atomiccount[] + trajlength >= nsamples
+        #    Threads.atomic_add!(atomiccount, trajlength)
+        #    terminate!(term, env, trajlength, done)
+        #    break
+        if done || trajlength == Hmax
             Threads.atomic_add!(atomiccount, trajlength)
             terminate!(term, env, trajlength, done)
-            break
-        elseif done || trajlength == Hmax
-            Threads.atomic_add!(atomiccount, trajlength)
-            terminate!(term, env, trajlength, done)
-            resetfn!(env)
-            trajlength = 0
+            if atomiccount[] > nsamples
+                break
+            else
+                resetfn!(env)
+                trajlength = 0
+            end
         end
     end
     sampler
@@ -208,59 +212,63 @@ function makebatch(env::AbstractEnvironment; sizehint::Union{Integer,Nothing} = 
     batch
 end
 
-function collate!(sampler::EnvSampler, n::Integer, copy::Bool)
-    batch = copy ? map(deepcopy, sampler.batch) : sampler.batch
+function collate!(sampler::EnvSampler, N::Integer, copy::Bool)
+    batch = copy ? map(deepcopy, sampler.batch) : sampler.batch # TODO
     for b in batch
         empty!(b)
-        sizehint!(b, n)
+        sizehint!(b, N)
     end
 
+    #@info sum(sampler.bufs) do buf
+    #    sum(buf.terminal.lengths)
+    #end
+
     count = 0
-    maxlen = maximum(map(buf -> length(buf.terminal), sampler.bufs))
-    for i = 1:maxlen, (tid, buf) in enumerate(sampler.bufs)
-        count >= n && break
+    togo = N - count
+    for buf in sampler.bufs
 
         trajbuf = buf.trajectory
         termbuf = buf.terminal
-        length(termbuf) < i && continue
+        from = firstindex(trajbuf)
 
-        @uviews trajbuf termbuf begin
-            from = i == 1 ? 1 : sum(view(termbuf.lengths, 1:i-1)) + 1
-            len = termbuf.lengths[i]
-            len = count + len > n ? n - count : len
-            to = from + len - 1
+        @uviews trajbuf termbuf for episode_idx in eachindex(termbuf)
+            togo = N - count
+            togo == 0 && break
+
+            len = min(togo, termbuf.lengths[episode_idx])
+            until = from + len
+            to = until - 1
+            count += len
 
             traj = view(trajbuf, from:to)
-            term = view(termbuf, i)
+            term = view(termbuf, episode_idx)
 
             push!(batch.states, traj.states)
             push!(batch.observations, traj.observations)
             push!(batch.actions, traj.actions)
             push!(batch.rewards, traj.rewards)
             push!(batch.evaluations, traj.evaluations)
-            push!(batch.terminal_states, reshape(term.states, (:, 1)))
-            push!(batch.terminal_observations, reshape(term.observations, (:, 1)))
-            push!(batch.dones, termbuf.dones[i])
+            push!(batch.terminal_states, reshape(term.states, (:, 1))) # TODO (:, 1)
+            push!(batch.terminal_observations, reshape(term.observations, (:, 1))) #TODO (:, 1)
+            push!(batch.dones, termbuf.dones[episode_idx])
 
-            count += length(from:to)
-            from = to + 1
+            from = until
         end
+        togo == 0 && break
     end
 
     nbatches = length(batch.dones)
     @assert length(batch.terminal_states) ==
             length(batch.terminal_observations) ==
             length(batch.dones)
-    @assert nsamples(batch.states) == n
-    @assert nsamples(batch.observations) == n
-    @assert nsamples(batch.actions) == n
-    @assert nsamples(batch.rewards) == n
-    @assert nsamples(batch.evaluations) == n
-
+    @assert nsamples(batch.states) == N
+    @assert nsamples(batch.observations) == N
+    @assert nsamples(batch.actions) == N
+    @assert nsamples(batch.rewards) == N
+    @assert nsamples(batch.evaluations) == N
 
     batch
 end
-
 
 function _defaultnthreads(nsamples, Hmax, nthreads)
     d, r = divrem(nsamples, Hmax)
