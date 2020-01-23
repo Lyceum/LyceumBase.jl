@@ -76,6 +76,7 @@ function sample!(
     _emptybufs!(sampler)
 
     if nthreads == 1
+        # short circuit
         _sample!(actionfn!, resetfn!, sampler, nsamples, Hmax)
     else
         @sync for _ = 1:nthreads
@@ -108,9 +109,9 @@ function _sample!(actionfn!::F, resetfn!::G, sampler, nsamples, Hmax) where {F,G
         trajlength += 1
 
         if done || trajlength == Hmax
+            n += trajlength
             _terminate_trajectory!(term, env, trajlength, done)
             resetfn!(env)
-            n += trajlength
             trajlength = 0
         end
     end
