@@ -13,7 +13,7 @@ const EnvSpaces = NamedTuple{
 """
     statespace(env::AbstractEnvironment) --> Shapes.AbstractShape
 
-Returns a subtype of [`Shapes.AbstractShape`](@ref) describing the state space of `env`.
+Returns a subtype of `Shapes.AbstractShape` describing the state space of `env`.
 
 See also: [`getstate!`](@ref), [`setstate!`](@ref), [`getstate`](@ref).
 """
@@ -66,7 +66,7 @@ See also: [`statespace`](@ref), [`getstate!`](@ref), [`getstate`](@ref).
 """
     obsspace(env::AbstractEnvironment) --> Shapes.AbstractShape
 
-Returns a subtype of [`Shapes.AbstractShape`](@ref) describing the observation space of `env`.
+Returns a subtype of `Shapes.AbstractShape` describing the observation space of `env`.
 
 See also: [`getobs!`](@ref), [`getobs`](@ref).
 """
@@ -104,7 +104,7 @@ end
 """
     actionspace(env::AbstractEnvironment) --> Shapes.AbstractShape
 
-Returns a subtype of [`Shapes.AbstractShape`](@ref) describing the action space of `env`.
+Returns a subtype of `Shapes.AbstractShape` describing the action space of `env`.
 
 See also: [`getaction!`](@ref), [`setaction!`](@ref), [`getaction`](@ref).
 """
@@ -157,13 +157,13 @@ See also: [`actionspace`](@ref), [`getaction!`](@ref), [`getaction`](@ref).
 """
     rewardspace(env::AbstractEnvironment) --> Shapes.AbstractShape
 
-Returns a subtype of [`Shapes.AbstractShape`](@ref) describing the reward space of `env`.
+Returns a subtype of `Shapes.AbstractShape` describing the reward space of `env`.
 Defaults to `Shapes.ScalarShape{Float64}()`.
 
 See also: [`getreward`](@ref).
 
 !!! note
-    Currently, only scalar spaces are supported (e.g. [`Shapes.ScalarShape`](@ref)).
+    Currently, only scalar spaces are supported (e.g. `Shapes.ScalarShape`).
 """
 @inline rewardspace(env::AbstractEnvironment) = ScalarShape{Float64}()
 
@@ -206,13 +206,13 @@ end
 """
     evalspace(env::AbstractEnvironment) --> Shapes.AbstractShape
 
-Returns a subtype of [`Shapes.AbstractShape`](@ref) describing the evaluation space of `env`.
+Returns a subtype of `Shapes.AbstractShape` describing the evaluation space of `env`.
 Defaults to `Shapes.ScalarShape{Float64}()`.
 
 See also: [`geteval`](@ref).
 
 !!! note
-    Currently, only scalar evaluation spaces are supported (e.g. [`Shapes.ScalarShape`](@ref)).
+    Currently, only scalar evaluation spaces are supported (e.g. `Shapes.ScalarShape`).
 """
 @inline evalspace(env::AbstractEnvironment) = ScalarShape{Float64}()
 
