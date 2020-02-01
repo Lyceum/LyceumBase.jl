@@ -161,6 +161,7 @@ function _rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnvironme
 
         getstate!(st, env)
         getobs!(ot, env)
+        getaction!(at, env)
 
         actionfn!(at, st, ot)
         setaction!(env, at)
