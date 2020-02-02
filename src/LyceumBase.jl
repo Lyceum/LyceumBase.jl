@@ -9,7 +9,6 @@ using BenchmarkTools: @benchmark
 
 
 const Maybe{T} = Union{T,Nothing}
-const Many{T} = Tuple{Vararg{T}}
 const TupleN{T,N} = NTuple{N,T}
 
 const AbsArr{T,N} = AbstractArray{T,N}
