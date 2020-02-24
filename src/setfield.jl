@@ -76,8 +76,8 @@ prefermutation(lens::Lens) = Lens!(lens)
 """
     $(TYPEDSIGNATURES)
 
-Like `Setfield.@set`, but always mutate when at least one of the applied lens
-yields a mutable reference. Otherwise fails.
+Like `Setfield.@set`, but always mutate when at least one of the nested objects is
+mutable. Otherwise fails.
 
 # Examples
 ```jldoctest
@@ -90,9 +90,13 @@ julia> mutable struct Mutable
 
 julia> x = orig = Mutable((x=Mutable(1, 2), y=3), 4);
 
-julia> @set!! x.a.x.a = 10;
+julia> @set! x.a.x.a = 10;
 
 julia> @assert x.a.x.a == orig.a.x.a == 10
+
+julia> immutable = (x=(y=(z=1,),),)
+
+julia> # this would error: @set! y.x.a = 10;
 ```
 """
 macro set!(ex)
