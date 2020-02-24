@@ -127,7 +127,8 @@ end
 end
 
 
-@inline Base.parent(A::ElasticBuffer) = reshape(A.data, size(A))
+#@inline Base.parent(A::ElasticBuffer) = reshape(A.data, size(A))
+@inline Base.parent(A::ElasticBuffer) = A.data
 
 @inline Base.dataids(A::ElasticBuffer) = Base.dataids(A.data)
 

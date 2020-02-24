@@ -1,7 +1,14 @@
 module ToolsTest
 
-using LyceumBase.Tools, Test
-using Shapes, ElasticArrays, UnsafeArrays, Random, KahanSummation, LinearAlgebra
+using LyceumBase.Tools
+using Test
+using Shapes
+using ElasticArrays
+using UnsafeArrays
+using Random
+using Distributions: Uniform
+using KahanSummation
+using LinearAlgebra
 
 @testset "LyceumTools.jl" begin
     @testset "stats" begin
@@ -16,4 +23,6 @@ using Shapes, ElasticArrays, UnsafeArrays, Random, KahanSummation, LinearAlgebra
     @testset "geom" begin
         include("geom.jl")
     end
+end
+
 end
