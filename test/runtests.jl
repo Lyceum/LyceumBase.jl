@@ -1,8 +1,6 @@
 using LyceumBase
 using Test
 using BenchmarkTools
-using Random
-
 
 @testset "LyceumBase.jl" begin
     @testset "Tools" begin include("Tools/Tools.jl") end
