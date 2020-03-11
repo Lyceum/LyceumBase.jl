@@ -29,7 +29,7 @@ include("nestedarrays/functions.jl")
 include("nestedarrays/nestedview.jl")
 
 export ElasticArray, shrinklastdim!, growlastdim!, resizelastdim!
-include("elasticbuffer.jl")
+include("elasticarray.jl")
 
 export BatchedVector
 include("batchedvector.jl")
