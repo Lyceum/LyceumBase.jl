@@ -12,7 +12,7 @@ module SpecialArraysTest
         include("nestedarrays/nestedview.jl")
     end
 
-    @testset "ElasticBuffer" begin
+    @testset "ElasticArray" begin
         include("elasticbuffer.jl")
     end
 

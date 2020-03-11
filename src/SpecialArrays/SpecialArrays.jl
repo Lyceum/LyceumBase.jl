@@ -28,7 +28,7 @@ include("nestedarrays/util.jl")
 include("nestedarrays/functions.jl")
 include("nestedarrays/nestedview.jl")
 
-export ElasticBuffer, shrinklastdim!, growlastdim!, resizelastdim!
+export ElasticArray, shrinklastdim!, growlastdim!, resizelastdim!
 include("elasticbuffer.jl")
 
 export BatchedVector

@@ -17,100 +17,100 @@ end
 
 function test_E()
     V = test_V()
-    ElasticBuffer{T}(TEST_KERNEL_SIZE, V)
+    ElasticArray{T}(TEST_KERNEL_SIZE, V)
 end
 
 lastdim_slice_idxs(A::AbstractArray{T,N}, i::Integer) where {T,N} = (ntuple(_ -> :, Val(N - 1))..., i)
 
-test_comp(E::ElasticBuffer, V::Vector{<:Array}) =
+test_comp(E::ElasticArray, V::Vector{<:Array}) =
     all(i -> @view(E[lastdim_slice_idxs(E, i)...]) == V[i], eachindex(V))
 
 @testset "constructors" begin
     let V = test_V()
-        @test @inferred(ElasticBuffer{T,N,M}(TEST_KERNEL_SIZE, V)) isa ElasticBuffer{T,N,M}
-        @test ElasticBuffer{T,N,M}(TEST_KERNEL_SIZE, V).kernel_size == TEST_KERNEL_SIZE
-        @test ElasticBuffer{T,N,M}(TEST_KERNEL_SIZE, V).kernel_length == TEST_KERNEL_LENGTH
-        @test ElasticBuffer{T,N,M}(TEST_KERNEL_SIZE, V).data === V
+        @test @inferred(ElasticArray{T,N,M}(TEST_KERNEL_SIZE, V)) isa ElasticArray{T,N,M}
+        @test ElasticArray{T,N,M}(TEST_KERNEL_SIZE, V).kernel_size == TEST_KERNEL_SIZE
+        @test ElasticArray{T,N,M}(TEST_KERNEL_SIZE, V).kernel_length == TEST_KERNEL_LENGTH
+        @test ElasticArray{T,N,M}(TEST_KERNEL_SIZE, V).data === V
 
-        @test @inferred(ElasticBuffer{T,N}(TEST_KERNEL_SIZE, V)) isa ElasticBuffer{T,N,M}
-        @test ElasticBuffer{T,N}(TEST_KERNEL_SIZE, V).kernel_size == TEST_KERNEL_SIZE
-        @test ElasticBuffer{T,N}(TEST_KERNEL_SIZE, V).kernel_length == TEST_KERNEL_LENGTH
-        @test ElasticBuffer{T,N}(TEST_KERNEL_SIZE, V).data === V
+        @test @inferred(ElasticArray{T,N}(TEST_KERNEL_SIZE, V)) isa ElasticArray{T,N,M}
+        @test ElasticArray{T,N}(TEST_KERNEL_SIZE, V).kernel_size == TEST_KERNEL_SIZE
+        @test ElasticArray{T,N}(TEST_KERNEL_SIZE, V).kernel_length == TEST_KERNEL_LENGTH
+        @test ElasticArray{T,N}(TEST_KERNEL_SIZE, V).data === V
 
-        @test @inferred(ElasticBuffer{T}(TEST_KERNEL_SIZE, V)) isa ElasticBuffer{T,N,M}
-        @test ElasticBuffer{T}(TEST_KERNEL_SIZE, V).kernel_size == TEST_KERNEL_SIZE
-        @test ElasticBuffer{T}(TEST_KERNEL_SIZE, V).kernel_length == TEST_KERNEL_LENGTH
-        @test ElasticBuffer{T}(TEST_KERNEL_SIZE, V).data === V
+        @test @inferred(ElasticArray{T}(TEST_KERNEL_SIZE, V)) isa ElasticArray{T,N,M}
+        @test ElasticArray{T}(TEST_KERNEL_SIZE, V).kernel_size == TEST_KERNEL_SIZE
+        @test ElasticArray{T}(TEST_KERNEL_SIZE, V).kernel_length == TEST_KERNEL_LENGTH
+        @test ElasticArray{T}(TEST_KERNEL_SIZE, V).data === V
     end
 
 
-    @test @inferred(ElasticBuffer{T,N,M}(undef, TEST_DIMS)) isa ElasticBuffer{T,N,M}
-    @test ElasticBuffer{T,N,M}(undef, TEST_DIMS).kernel_size == TEST_KERNEL_SIZE
-    @test ElasticBuffer{T,N,M}(undef, TEST_DIMS).kernel_length == TEST_KERNEL_LENGTH
+    @test @inferred(ElasticArray{T,N,M}(undef, TEST_DIMS)) isa ElasticArray{T,N,M}
+    @test ElasticArray{T,N,M}(undef, TEST_DIMS).kernel_size == TEST_KERNEL_SIZE
+    @test ElasticArray{T,N,M}(undef, TEST_DIMS).kernel_length == TEST_KERNEL_LENGTH
 
-    @test @inferred(ElasticBuffer{T,N}(undef, TEST_DIMS)) isa ElasticBuffer{T,N,M}
-    @test ElasticBuffer{T,N}(undef, TEST_DIMS).kernel_size == TEST_KERNEL_SIZE
-    @test ElasticBuffer{T,N}(undef, TEST_DIMS).kernel_length == TEST_KERNEL_LENGTH
+    @test @inferred(ElasticArray{T,N}(undef, TEST_DIMS)) isa ElasticArray{T,N,M}
+    @test ElasticArray{T,N}(undef, TEST_DIMS).kernel_size == TEST_KERNEL_SIZE
+    @test ElasticArray{T,N}(undef, TEST_DIMS).kernel_length == TEST_KERNEL_LENGTH
 
-    @test @inferred(ElasticBuffer{T}(undef, TEST_DIMS)) isa ElasticBuffer{T,N,M}
-    @test ElasticBuffer{T}(undef, TEST_DIMS).kernel_size == TEST_KERNEL_SIZE
-    @test ElasticBuffer{T}(undef, TEST_DIMS).kernel_length == TEST_KERNEL_LENGTH
+    @test @inferred(ElasticArray{T}(undef, TEST_DIMS)) isa ElasticArray{T,N,M}
+    @test ElasticArray{T}(undef, TEST_DIMS).kernel_size == TEST_KERNEL_SIZE
+    @test ElasticArray{T}(undef, TEST_DIMS).kernel_length == TEST_KERNEL_LENGTH
 
 
-    @test @inferred(ElasticBuffer{T,N,M}(undef, TEST_DIMS...)) isa ElasticBuffer{T,N,M}
-    @test ElasticBuffer{T,N,M}(undef, TEST_DIMS...).kernel_size == TEST_KERNEL_SIZE
-    @test ElasticBuffer{T,N,M}(undef, TEST_DIMS...).kernel_length == TEST_KERNEL_LENGTH
+    @test @inferred(ElasticArray{T,N,M}(undef, TEST_DIMS...)) isa ElasticArray{T,N,M}
+    @test ElasticArray{T,N,M}(undef, TEST_DIMS...).kernel_size == TEST_KERNEL_SIZE
+    @test ElasticArray{T,N,M}(undef, TEST_DIMS...).kernel_length == TEST_KERNEL_LENGTH
 
-    @test @inferred(ElasticBuffer{T,N}(undef, TEST_DIMS...)) isa ElasticBuffer{T,N,M}
-    @test ElasticBuffer{T,N}(undef, TEST_DIMS...).kernel_size == TEST_KERNEL_SIZE
-    @test ElasticBuffer{T,N}(undef, TEST_DIMS...).kernel_length == TEST_KERNEL_LENGTH
+    @test @inferred(ElasticArray{T,N}(undef, TEST_DIMS...)) isa ElasticArray{T,N,M}
+    @test ElasticArray{T,N}(undef, TEST_DIMS...).kernel_size == TEST_KERNEL_SIZE
+    @test ElasticArray{T,N}(undef, TEST_DIMS...).kernel_length == TEST_KERNEL_LENGTH
 
-    @test @inferred(ElasticBuffer{T}(undef, TEST_DIMS...)) isa ElasticBuffer{T,N,M}
-    @test ElasticBuffer{T}(undef, TEST_DIMS...).kernel_size == TEST_KERNEL_SIZE
-    @test ElasticBuffer{T}(undef, TEST_DIMS...).kernel_length == TEST_KERNEL_LENGTH
+    @test @inferred(ElasticArray{T}(undef, TEST_DIMS...)) isa ElasticArray{T,N,M}
+    @test ElasticArray{T}(undef, TEST_DIMS...).kernel_size == TEST_KERNEL_SIZE
+    @test ElasticArray{T}(undef, TEST_DIMS...).kernel_length == TEST_KERNEL_LENGTH
 
 
     let A = test_A()
-        @test @inferred(ElasticBuffer{T,N,M}(A)) isa ElasticBuffer{T,N,M}
-        @test ElasticBuffer{T,N,M}(A).kernel_size == TEST_KERNEL_SIZE
-        @test ElasticBuffer{T,N,M}(A).kernel_length == TEST_KERNEL_LENGTH
-        @test ElasticBuffer{T,N,M}(A).data == vec(A)
-        @test ElasticBuffer{T,N,M}(A).data !== A
+        @test @inferred(ElasticArray{T,N,M}(A)) isa ElasticArray{T,N,M}
+        @test ElasticArray{T,N,M}(A).kernel_size == TEST_KERNEL_SIZE
+        @test ElasticArray{T,N,M}(A).kernel_length == TEST_KERNEL_LENGTH
+        @test ElasticArray{T,N,M}(A).data == vec(A)
+        @test ElasticArray{T,N,M}(A).data !== A
 
-        @test @inferred(ElasticBuffer{T,N}(A)) isa ElasticBuffer{T,N,M}
-        @test ElasticBuffer{T,N}(A).kernel_size == TEST_KERNEL_SIZE
-        @test ElasticBuffer{T,N}(A).kernel_length == TEST_KERNEL_LENGTH
-        @test ElasticBuffer{T,N}(A).data == vec(A)
-        @test ElasticBuffer{T,N}(A).data !== A
+        @test @inferred(ElasticArray{T,N}(A)) isa ElasticArray{T,N,M}
+        @test ElasticArray{T,N}(A).kernel_size == TEST_KERNEL_SIZE
+        @test ElasticArray{T,N}(A).kernel_length == TEST_KERNEL_LENGTH
+        @test ElasticArray{T,N}(A).data == vec(A)
+        @test ElasticArray{T,N}(A).data !== A
 
-        @test @inferred(ElasticBuffer{T}(A)) isa ElasticBuffer{T,N,M}
-        @test ElasticBuffer{T}(A).kernel_size == TEST_KERNEL_SIZE
-        @test ElasticBuffer{T}(A).kernel_length == TEST_KERNEL_LENGTH
-        @test ElasticBuffer{T}(A).data == vec(A)
-        @test ElasticBuffer{T}(A).data !== A
+        @test @inferred(ElasticArray{T}(A)) isa ElasticArray{T,N,M}
+        @test ElasticArray{T}(A).kernel_size == TEST_KERNEL_SIZE
+        @test ElasticArray{T}(A).kernel_length == TEST_KERNEL_LENGTH
+        @test ElasticArray{T}(A).data == vec(A)
+        @test ElasticArray{T}(A).data !== A
     end
 end
 
 @testset "convert" begin
     A = test_A()
 
-    @test @inferred(convert(ElasticBuffer{T,N,M}, A)) isa ElasticBuffer{T,N,M}
-    @test convert(ElasticBuffer{T,N,M}, A).kernel_size == TEST_KERNEL_SIZE
-    @test convert(ElasticBuffer{T,N,M}, A).kernel_length == TEST_KERNEL_LENGTH
-    @test convert(ElasticBuffer{T,N,M}, A).data == vec(A)
-    @test convert(ElasticBuffer{T,N,M}, A).data !== A
+    @test @inferred(convert(ElasticArray{T,N,M}, A)) isa ElasticArray{T,N,M}
+    @test convert(ElasticArray{T,N,M}, A).kernel_size == TEST_KERNEL_SIZE
+    @test convert(ElasticArray{T,N,M}, A).kernel_length == TEST_KERNEL_LENGTH
+    @test convert(ElasticArray{T,N,M}, A).data == vec(A)
+    @test convert(ElasticArray{T,N,M}, A).data !== A
 
-    @test @inferred(convert(ElasticBuffer{T,N}, A)) isa ElasticBuffer{T,N,M}
-    @test convert(ElasticBuffer{T,N}, A).kernel_size == TEST_KERNEL_SIZE
-    @test convert(ElasticBuffer{T,N}, A).kernel_length == TEST_KERNEL_LENGTH
-    @test convert(ElasticBuffer{T,N}, A).data == vec(A)
-    @test convert(ElasticBuffer{T,N}, A).data !== A
+    @test @inferred(convert(ElasticArray{T,N}, A)) isa ElasticArray{T,N,M}
+    @test convert(ElasticArray{T,N}, A).kernel_size == TEST_KERNEL_SIZE
+    @test convert(ElasticArray{T,N}, A).kernel_length == TEST_KERNEL_LENGTH
+    @test convert(ElasticArray{T,N}, A).data == vec(A)
+    @test convert(ElasticArray{T,N}, A).data !== A
 
-    @test @inferred(convert(ElasticBuffer{T}, A)) isa ElasticBuffer{T,N,M}
-    @test convert(ElasticBuffer{T}, A).kernel_size == TEST_KERNEL_SIZE
-    @test convert(ElasticBuffer{T}, A).kernel_length == TEST_KERNEL_LENGTH
-    @test convert(ElasticBuffer{T}, A).data == vec(A)
-    @test convert(ElasticBuffer{T}, A).data !== A
+    @test @inferred(convert(ElasticArray{T}, A)) isa ElasticArray{T,N,M}
+    @test convert(ElasticArray{T}, A).kernel_size == TEST_KERNEL_SIZE
+    @test convert(ElasticArray{T}, A).kernel_length == TEST_KERNEL_LENGTH
+    @test convert(ElasticArray{T}, A).data == vec(A)
+    @test convert(ElasticArray{T}, A).data !== A
 end
 
 @testset "misc array interface" begin
@@ -148,8 +148,8 @@ end
 end
 
 @testset "mightalias and dataids" begin
-    E1 = ElasticBuffer{T}(undef, 10, 5)
-    E2 = ElasticBuffer{T}(undef, 10, 5)
+    E1 = ElasticArray{T}(undef, 10, 5)
+    E2 = ElasticArray{T}(undef, 10, 5)
     @test Base.dataids(parent(E1)) == @inferred Base.dataids(E1)
     @test @inferred !Base.mightalias(E1, E2)
     @test @inferred !Base.mightalias(view(E1, 2:3, 1:2), view(E1, 4:5, 1:2))
@@ -159,15 +159,15 @@ end
 
 @testset "similar" begin
     E = test_E()
-    @test typeof(@inferred(similar(E))) === ElasticBuffer{T,N,M}
+    @test typeof(@inferred(similar(E))) === ElasticArray{T,N,M}
     @test size(similar(E)) == size(E)
 
-    @test typeof(@inferred(similar(E, Int))) === ElasticBuffer{Int,N,M}
+    @test typeof(@inferred(similar(E, Int))) === ElasticArray{Int,N,M}
     @test size(similar(E, Int)) == size(E)
     @test eltype(similar(E, Int)) != eltype(E)
 
     dims = (TEST_DIMS..., 10)
-    @test typeof(@inferred(similar(E, T, dims))) === ElasticBuffer{T,N+1,M+1}
+    @test typeof(@inferred(similar(E, T, dims))) === ElasticArray{T,N+1,M+1}
     @test size(similar(E, T, dims)) == dims
     @test eltype(similar(E, T, dims)) == eltype(E)
 end
@@ -263,24 +263,24 @@ end
 
 
 @testset "basic math" begin
-    E1 = rand!(ElasticBuffer{T}(undef, 9, 9))
-    E2 = rand!(ElasticBuffer{T}(undef, 9, 9))
-    E3 = rand!(ElasticBuffer{T}(undef, 9, 7))
+    E1 = rand!(ElasticArray{T}(undef, 9, 9))
+    E2 = rand!(ElasticArray{T}(undef, 9, 9))
+    E3 = rand!(ElasticArray{T}(undef, 9, 7))
 
     A1 = Array(E1)
     A2 = Array(E2)
     A3 = Array(E3)
 
-    @test @inferred(2 * E1) isa ElasticBuffer{T,2,1}
+    @test @inferred(2 * E1) isa ElasticArray{T,2,1}
     @test 2 * E1 == 2 * A1
 
-    @test @inferred(E1 .+ 2) isa ElasticBuffer{T,2,1}
+    @test @inferred(E1 .+ 2) isa ElasticArray{T,2,1}
     @test E1 .+ 2 == A1 .+ 2
 
-    @test @inferred(E1 + E2) isa ElasticBuffer{T,2,1}
+    @test @inferred(E1 + E2) isa ElasticArray{T,2,1}
     @test E1 + E2 == A1 + A2
 
-    @test @inferred(E1 * E2) isa ElasticBuffer{T,2,1}
+    @test @inferred(E1 * E2) isa ElasticArray{T,2,1}
     @test E1 * E2 == A1 * A2
     @test E1 * E3 == A1 * A3
 
