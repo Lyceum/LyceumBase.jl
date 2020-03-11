@@ -159,15 +159,15 @@ end
 
 @testset "similar" begin
     E = test_E()
-    @test typeof(@inferred(similar(E))) === Array{T,N}
+    @test typeof(@inferred(similar(E))) === ElasticBuffer{T,N,M}
     @test size(similar(E)) == size(E)
 
-    @test typeof(@inferred(similar(E, Int))) === Array{Int,N}
+    @test typeof(@inferred(similar(E, Int))) === ElasticBuffer{Int,N,M}
     @test size(similar(E, Int)) == size(E)
     @test eltype(similar(E, Int)) != eltype(E)
 
     dims = (TEST_DIMS..., 10)
-    @test typeof(@inferred(similar(E, T, dims))) === Array{T,N+1}
+    @test typeof(@inferred(similar(E, T, dims))) === ElasticBuffer{T,N+1,M+1}
     @test size(similar(E, T, dims)) == dims
     @test eltype(similar(E, T, dims)) == eltype(E)
 end
@@ -261,6 +261,7 @@ end
     end
 end
 
+
 @testset "basic math" begin
     E1 = rand!(ElasticBuffer{T}(undef, 9, 9))
     E2 = rand!(ElasticBuffer{T}(undef, 9, 9))
@@ -270,16 +271,16 @@ end
     A2 = Array(E2)
     A3 = Array(E3)
 
-    @test @inferred(2 * E1) isa Array{T,2}
+    @test @inferred(2 * E1) isa ElasticBuffer{T,2,1}
     @test 2 * E1 == 2 * A1
 
-    @test @inferred(E1 .+ 2) isa Array{T,2}
+    @test @inferred(E1 .+ 2) isa ElasticBuffer{T,2,1}
     @test E1 .+ 2 == A1 .+ 2
 
-    @test @inferred(E1 + E2) isa Array{T,2}
+    @test @inferred(E1 + E2) isa ElasticBuffer{T,2,1}
     @test E1 + E2 == A1 + A2
 
-    @test @inferred(E1 * E2) isa Array{T,2}
+    @test @inferred(E1 * E2) isa ElasticBuffer{T,2,1}
     @test E1 * E2 == A1 * A2
     @test E1 * E3 == A1 * A3
 

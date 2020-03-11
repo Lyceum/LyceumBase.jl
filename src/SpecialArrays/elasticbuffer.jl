@@ -127,15 +127,26 @@ end
 end
 
 
-#@inline Base.parent(A::ElasticBuffer) = reshape(A.data, size(A))
-@inline Base.parent(A::ElasticBuffer) = A.data
-
-@inline Base.dataids(A::ElasticBuffer) = Base.dataids(A.data)
-
 @inline function Base.resize!(A::ElasticBuffer{T,N}, dims::Vararg{Integer,N}) where {T,N}
     kernel_size, size_lastdim = _split_resize_dims(A, dims)
     resize!(A.data, A.kernel_length.divisor * size_lastdim)
     A
+end
+
+@inline function growlastdim!(B::ElasticBuffer, n::Integer)
+    n < 0 && throw(DomainError(n, "n must be positive"))
+    resizelastdim!(B, size(B, ndims(B)) + n)
+end
+
+@inline function shrinklastdim!(B::ElasticBuffer, n::Integer)
+    n < 0 && throw(DomainError(n, "n must be positive"))
+    resizelastdim!(B, size(B, ndims(B)) - n)
+end
+
+@inline function resizelastdim!(B::ElasticBuffer, n::Integer)
+    kernel_size = front(size(B))
+    dims = (kernel_size..., n)
+    resize!(B, dims...)
 end
 
 @inline function Base.sizehint!(A::ElasticBuffer{T,N}, dims::Vararg{Integer,N}) where {T,N}
@@ -180,29 +191,23 @@ end
 
 
 @inline function Base.similar(A::ElasticBuffer, T::Type, dims::Dims{N}) where {N}
-    similar(A.data, T, dims)
+    ElasticBuffer{T,N}(front(dims), similar(A.data, T, prod(dims)))
 end
 
-@inline Base.unsafe_convert(::Type{Ptr{T}}, A::ElasticBuffer{T}) where T = Base.unsafe_convert(Ptr{T}, A.data)
+Broadcast.BroadcastStyle(::Type{<:ElasticBuffer}) = Broadcast.ArrayStyle{ElasticBuffer}()
+
+function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{ElasticBuffer}}, ::Type{ElType}) where ElType
+    similar(ElasticBuffer{ElType}, axes(bc))
+end
+
+
+@inline function Base.unsafe_convert(::Type{Ptr{T}}, A::ElasticBuffer{T}) where T
+    Base.unsafe_convert(Ptr{T}, A.data)
+end
 
 @inline Base.pointer(A::ElasticBuffer, i::Integer) = pointer(A.data, i)
 
-
-@inline function growlastdim!(B::ElasticBuffer, n::Integer)
-    n < 0 && throw(DomainError(n, "n must be positive"))
-    resizelastdim!(B, size(B, ndims(B)) + n)
-end
-
-@inline function shrinklastdim!(B::ElasticBuffer, n::Integer)
-    n < 0 && throw(DomainError(n, "n must be positive"))
-    resizelastdim!(B, size(B, ndims(B)) - n)
-end
-
-@inline function resizelastdim!(B::ElasticBuffer, n::Integer)
-    kernel_size = front(size(B))
-    dims = (kernel_size..., n)
-    resize!(B, dims...)
-end
+@inline Base.dataids(A::ElasticBuffer) = Base.dataids(A.data)
 
 
 @inline function _split_resize_dims(A::ElasticBuffer, dims::NTuple{N,Integer}) where {N}
