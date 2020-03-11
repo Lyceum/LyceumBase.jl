@@ -13,7 +13,7 @@ module SpecialArraysTest
     end
 
     @testset "ElasticArray" begin
-        include("elasticbuffer.jl")
+        include("elasticarray.jl")
     end
 
 end
