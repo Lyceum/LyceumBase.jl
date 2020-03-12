@@ -8,6 +8,9 @@ const AbsVec{T} = AbstractVector{T}
 const AbsMat{T} = AbstractMatrix{T}
 const AbsArr{T,N} = AbstractArray{T, N}
 
+const IDims{N} = NTuple{N,Integer}
+const IVararg{N} = Vararg{Integer,N}
+
 include("util.jl")
 include("viewtype.jl")
 
