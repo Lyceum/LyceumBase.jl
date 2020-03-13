@@ -1,18 +1,21 @@
 module SpecialArrays
 
 using UnsafeArrays, Adapt, Shapes
-using Base: @propagate_inbounds, @pure, @_inline_meta, ViewIndex, require_one_based_indexing
+using Base: @propagate_inbounds, @pure, @_inline_meta, ViewIndex, require_one_based_indexing, tail
 using Base.MultiplicativeInverses: SignedMultiplicativeInverse
 
-const AbsVec{T} = AbstractVector{T}
-const AbsMat{T} = AbstractMatrix{T}
 const AbsArr{T,N} = AbstractArray{T, N}
+const AbsMat{T} = AbstractMatrix{T}
+const AbsVec{T} = AbstractVector{T}
 
 const IDims{N} = NTuple{N,Integer}
 const IVararg{N} = Vararg{Integer,N}
 
 include("util.jl")
 include("viewtype.jl")
+
+export Slices
+include("slices.jl")
 
 export
     NestedView,
