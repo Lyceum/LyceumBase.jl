@@ -9,24 +9,13 @@ using DocStringExtensions
 using Reexport
 
 
-
-const Maybe{T} = Union{T,Nothing}
-const TupleN{T,N} = NTuple{N,T}
-
-const AbsArr{T,N} = AbstractArray{T,N}
-const AbsMat{T} = AbstractMatrix{T}
-const AbsVec{T} = AbstractVector{T}
-
-const RealArr{N} = AbstractArray{<:Real,N}
-const RealMat = AbstractMatrix{<:Real}
-const RealVec = AbstractVector{<:Real}
-
-
+include("LyceumCore/LyceumCore.jl")
+using .LyceumCore
 
 include("util.jl")
+
 include("setfield.jl")
 @reexport using .SetfieldImpl
-
 
 
 ####
