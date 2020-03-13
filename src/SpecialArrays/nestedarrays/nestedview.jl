@@ -1,7 +1,7 @@
 struct NestedView{M,T,N,P,F,R} <: AbstractArray{T,N}
     parent::P
     reshaped::R
-    function NestedView{M,T,N,P}(parent::P) where {M,T,N,P}
+    function NestedView{M,T,N,P}(parent::P) where {M,T,N,P<:AbsArr}
         check_nestedarray_parameters(Val(M), T, Val(N), P)
         reshaped = _maybe_reshape(IndexStyle(parent), Val(M), parent)
         F = _has_fast_indexing(IndexStyle(parent, reshaped), Val(N))
@@ -9,26 +9,25 @@ struct NestedView{M,T,N,P,F,R} <: AbstractArray{T,N}
     end
 end
 
-@inline function NestedView{M,T,N,P}(parent) where {M,T,N,P}
+@inline function NestedView{M,T,N,P}(parent::AbsArr) where {M,T,N,P}
     NestedView{M,T,N,P}(convert(P, parent))
 end
 
-@inline function NestedView{M,T,N}(parent::P) where {M,T,N,P}
-    NestedView{M,T,N,P}(parent)
+@inline function NestedView{M,T,N}(parent::AbsArr) where {M,T,N}
+    NestedView{M,T,N,typeof(parent)}(parent)
 end
 
-@inline function NestedView{M,T}(parent::P) where {M,T,P}
-    N = ndims(P) - M
-    NestedView{M,T,N,P}(parent)
+@inline function NestedView{M,T}(parent::AbsArr) where {M,T}
+    N = ndims(parent) - M
+    NestedView{M,T,N}(parent)
 end
 
-@inline function NestedView{M}(parent::P) where {M,P} # TODO test
-    N = ndims(P) - M
-    T = _nested_viewtype(parent, Val(M), Val(N))
-    NestedView{M,T,N,P}(parent)
+@inline function NestedView{M}(parent::AbsArr) where {M}
+    T = _nested_viewtype(parent, Val(M), Val(ndims(parent) - M))
+    NestedView{M,T}(parent)
 end
 
-Base.convert(::Type{T}, A::AbstractArray) where {T<:NestedView} = A isa T ? A : T(A)
+Base.convert(::Type{T}, A::AbsArr) where {T<:NestedView} = A isa T ? A : T(A)
 
 
 const SlowNestedView{M,T,N,P,R} = NestedView{M,T,N,P,false,R}
@@ -38,11 +37,11 @@ const FastNestedView{M,T,N,P,R} = NestedView{M,T,N,P,true,R}
 @inline Base.IndexStyle(::Type{<:SlowNestedView}) = IndexCartesian()
 
 # Need to unpack our zero-dimensional views first
-@inline _maybe_unsqueeze(x::AbstractArray{T,0}) where {T} = x[]
+@inline _maybe_unsqueeze(x::AbsArr{<:Any,0}) = x[]
 @inline _maybe_unsqueeze(x) = x
 
-@inline _maybe_wrap(A::NestedView{M}, B::AbstractArray{<:Any,M}) where {M} = B
-@inline _maybe_wrap(A::NestedView{M}, B::AbstractArray) where {M} = NestedView{M}(B)
+@inline _maybe_wrap(A::NestedView{M}, B::AbsArr{<:Any,M}) where {M} = B
+@inline _maybe_wrap(A::NestedView{M}, B::AbsArr) where {M} = NestedView{M}(B)
 
 @inline _flat_indices(::NestedView{M}, i) where {M} = (ncolons(Val(M))..., i)
 @inline function _flat_indices(::NestedView{M,<:Any,N}, I::Tuple{Vararg{Any, N}}) where {M,N}
@@ -51,12 +50,10 @@ end
 
 
 @propagate_inbounds function Base.getindex(A::SlowNestedView{M,<:Any,N}, I::Vararg{Any,N}) where {M,N}
-    @boundscheck checkbounds(A, I...)
     @inbounds _maybe_wrap(A, view(A.parent, _flat_indices(A, I)...))
 end
 
 @propagate_inbounds function Base.getindex(A::FastNestedView{M}, i) where {M}
-    @boundscheck checkbounds(A, i)
     @inbounds _maybe_wrap(A, view(A.reshaped, _flat_indices(A, i)...))
 end
 
@@ -178,8 +175,8 @@ end
 
 
 """
-    innerview(A::AbstractArray{M+N}, ::Val{M})
-    innerview(A::AbstractArray{M+N}, M::Integer)
+    innerview(A::AbsArr{M+N}, ::Val{M})
+    innerview(A::AbsArr{M+N}, M::Integer)
 
 View array `A` as an `N`-dimensional array of `M`-dimensional arrays by
 wrapping it into an [`NestedView`](@ref). See also: [`outerview`](@ref).
@@ -190,8 +187,8 @@ function innerview end
 @inline innerview(A::AbsArr, M::Integer) = innerview(A, Val(convert(Int, M)))
 
 """
-    outerview(A::AbstractArray{M+N}, ::Val{N})
-    outerview(A::AbstractArray{M+N}, N::Integer)
+    outerview(A::AbsArr{M+N}, ::Val{N})
+    outerview(A::AbsArr{M+N}, N::Integer)
 
 View array `A` as an `N`-dimensional array of `M`-dimensional arrays by
 wrapping it into an [`NestedView`](@ref). See also: [`innerview`](@ref).

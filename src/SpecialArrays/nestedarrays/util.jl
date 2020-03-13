@@ -6,7 +6,7 @@
     M < 0 && return :(throw(DomainError($M, "NestedView parameter M cannot be negative")))
     N < 0 && return :(throw(DomainError($N, "NestedView parameter N cannot be negative")))
     L < 0 && return :(throw(DomainError($L, "NestedView parameter L cannot be negative")))
-    eltype(T) != eltype(P) && :(throw(ArgumentError("eltype mistmatch in NestedView parameters T and L.")))
+    eltype(T) != eltype(P) && :(throw(ArgumentError("eltype mismatch in NestedView parameters T and L.")))
     if M + N != L
         return :(throw(ArgumentError(
             "Dimension mismatch in NestedViews paramaters. Got M = $M, N = $N, and ndims(P) = $(ndims(P))"
@@ -41,8 +41,9 @@ end
 @inline function _nested_viewtype(A::AbstractArray{<:Any, L}, ::Val{M}, ::Val{N}) where {L,M,N}
     check_dims_match(Val(L), Val(M), Val(N))
     ax = axes(A)
-    idxs = (ntuple(_ -> Colon(), Val(M))..., ntuple(i -> first(ax[M + i]), Val(N))...)
-    viewtype(A, idxs)
+    inner = ntuple(_ -> Colon(), Val(M))
+    outer = ntuple(i -> first(ax[M + i]), Val(N))
+    viewtype(A, inner..., outer...)
 end
 
 @propagate_inbounds function flatindices(::Val{M}, I::NTuple{N,Any}) where {M,N}
