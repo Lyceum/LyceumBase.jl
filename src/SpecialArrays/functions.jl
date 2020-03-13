@@ -10,30 +10,43 @@ function flatten end
 
 @inline function flatten(A::AbsArr{<:AbsArr{U,M},N}) where {U,M,N}
     L = M + N
-    sz_inner = inner_size(A)
+    sz_inner = innersize(A)
     A_flat = Array{U,L}(undef, sz_inner..., size(A)...)
-    unsafe_flattento!(A_flat, A, sz_inner)
+    flattento!(A_flat, A, sz_inner)
 end
 
 
-@inline function flattento!(A::AbsArr{<:Any, L}, B::AbsArr{<:AbsArr{<:Any,M},N}) where {L,M,N}
-    L == M + N || throw(ArgumentError("ndims(A) != inner_ndims(B)"))
-    sz_inner = inner_size(B)
-    size(A) == (sz_inner..., size(B)...)|| throw(DimensionMismatch("inner_size(A) != inner_size(B)"))
-    unsafe_flattento!(A, B, sz_inner)
-end
+@inline function flattento!(dest::AbsArr{<:Any, L}, src::AbsArr{<:AbsArr{<:Any,M},N}, sz_inner::Dims{M} = innersize(src)) where {L,M,N}
+    L == M + N || throw(ArgumentError("ndims(dest) != innerndims(src)"))
+    if size(dest) != (sz_inner..., size(src)...)
+        throw(DimensionMismatch("innersize(dest) != innersize(src)"))
+    end
 
-function unsafe_flattento!(A::AbsArr, B::AbsArr{<:AbsArr{<:Any,M}}, sz_inner::Dims{M}) where {M}
     len_inner = prod(sz_inner)
-    from = firstindex(A)
-    for b in B
-        copyto!(A, from, b, firstindex(b), len_inner)
+    from = firstindex(dest)
+    for x in src
+        copyto!(dest, from, x, firstindex(x), len_inner)
         from += len_inner
     end
-    @assert from  == len_inner * length(B) + 1
-    A
+    @assert from  == len_inner * length(src) + 1
+    return dest
 end
 
+@inline function nestto!(dest::AbsArr{<:AbsArr{<:Any,M},N}, src::AbsArr{<:Any,L}, sz_inner::Dims{M} = innersize(dest)) where {L,M,N}
+    L == M + N || throw(ArgumentError("ndims(dest) != innerndims(src)"))
+    if size(src) != (sz_inner..., size(dest)...)
+        throw(DimensionMismatch("innersize(dest) != innersize(src)"))
+    end
+
+    len_inner = prod(sz_inner)
+    from = firstindex(src)
+    for x in dest
+        copyto!(x, firstindex(x), src, from, len_inner)
+        from += len_inner
+    end
+    @assert from  == len_inner * length(dest) + 1
+    return dest
+end
 
 """
     flatview(A::AbstractArray)
@@ -52,43 +65,43 @@ function flatview end
 
 
 """
-    inner_eltype(A::AbstractArray{<:AbstractArray})
-    inner_eltype(::Type{<:AbstractArray{<:AbstractArray}})
+    innereltype(A::AbstractArray{<:AbstractArray})
+    innereltype(::Type{<:AbstractArray{<:AbstractArray}})
 
 Returns the element type of the element arrays of `A`.
 Equivalent to `eltype(eltype(A))`.
 """
-function inner_eltype end
+function innereltype end
 
-@inline inner_eltype(::Type{A}) where {A <: AbsArr} = eltype(eltype(A))
-@inline inner_eltype(A::AbsArr) = inner_eltype(typeof(A))
+@inline innereltype(::Type{A}) where {A <: AbsArr} = eltype(eltype(A))
+@inline innereltype(A::AbsArr) = innereltype(typeof(A))
 
 
 """
-    inner_ndims(A::AbstractArray{<:AbstractArray})
-    inner_ndims(::Type{<:AbstractArray{<:AbstractArray}})
+    innerndims(A::AbstractArray{<:AbstractArray})
+    innerndims(::Type{<:AbstractArray{<:AbstractArray}})
 
 Returns the dimensionality of the element arrays of `A`.
 Throws an error if the elements of `A` do not have equal dimensionality.
 """
-function inner_ndims end
+function innerndims end
 
-@inline inner_ndims(::Type{<:AbsArr{<:AbsArr{<:Any,N}}}) where {N} = N
-@inline function inner_ndims(::Type{<:AbsArr{<:AbsArr}})
+@inline innerndims(::Type{<:AbsArr{<:AbsArr{<:Any,N}}}) where {N} = N
+@inline function innerndims(::Type{<:AbsArr{<:AbsArr}})
     throw(DimensionMismatch("The elements of A do not have equal dimensionality"))
 end
-@inline inner_ndims(A::AbsArr) = inner_ndims(typeof(A))
+@inline innerndims(A::AbsArr) = innerndims(typeof(A))
 
 
 """
-    inner_size(A::AbstractArray{<:AbstractArray}[, d])
+    innersize(A::AbstractArray{<:AbstractArray}[, d])
 
 Returns the size of the element arrays of `A`.
 Throws an error if the elements of `A` do not have equal size.
 """
-function inner_size end
+function innersize end
 
-function inner_size(A::AbsArr{<:AbsArr{<:Any,M}}) where {M}
+function innersize(A::AbsArr{<:AbsArr{<:Any,M}}) where {M}
     if isempty(A)
         sz = ntuple(_ -> zero(Int), Val(M))
     else
@@ -99,35 +112,35 @@ function inner_size(A::AbsArr{<:AbsArr{<:Any,M}}) where {M}
     end
     sz
 end
-function inner_size(A::AbsArr{<:AbsArr})
+function innersize(A::AbsArr{<:AbsArr})
     throw(DimensionMismatch("The elements of A do not have equal dimensionality"))
 end
-@inline function inner_size(A::AbsArr, d::Integer)
-    sz = inner_size(A)
+@inline function innersize(A::AbsArr, d::Integer)
+    sz = innersize(A)
     d <= length(sz) ? sz[d] : 1 # TODO offset arrays
 end
 
 
 """
-    inner_length(A::AbstractArray{<:AbstractArray})
+    innerlength(A::AbstractArray{<:AbstractArray})
 
 Returns the common length of the element arrays of `A`.
 Throws an error if the element arrays of `A` do not have equal size.
 """
-function inner_length end
+function innerlength end
 
-@inline inner_length(A::AbsArr{<:AbsArr}) = prod(inner_size(A))
+@inline innerlength(A::AbsArr{<:AbsArr}) = prod(innersize(A))
 
 
 """
-    inner_axes(A::AbstractArray{<:AbstractArray}[, d])
+    inneraxes(A::AbstractArray{<:AbstractArray}[, d])
 
 Returns the common length of the element arrays of `A`.
 Throws an error if the element arrays of `A` do not have equal axes.
 """
-function inner_axes end
+function inneraxes end
 
-function inner_axes(A::AbsArr{<:AbsArr{<:Any, M}}) where {M}
+function inneraxes(A::AbsArr{<:AbsArr{<:Any, M}}) where {M}
     if isempty(A)
         # TODO this would be wrong for offset arrays?
         ax = ntuple(_ -> Base.OneTo(0), Val(M))
@@ -139,11 +152,11 @@ function inner_axes(A::AbsArr{<:AbsArr{<:Any, M}}) where {M}
     end
     ax
 end
-function inner_axes(A::AbsArr{<:AbsArr})
+function inneraxes(A::AbsArr{<:AbsArr})
     throw(DimensionMismatch("The elements of A do not have equal dimensionality"))
 end
 
-@inline function inner_axes(A::AbsArr, d::Integer)
-    ax = inner_axes(A)
+@inline function inneraxes(A::AbsArr, d::Integer)
+    ax = inneraxes(A)
     d <= length(ax) ? ax[d] : Base.OneTo(1) # TODO offset arrays
 end

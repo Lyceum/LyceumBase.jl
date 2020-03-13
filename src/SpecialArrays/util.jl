@@ -23,8 +23,8 @@ end
 @inline front(x::LTuple{L}) where {L} = front_tuple(x, Val(L - 1))
 @inline frontlast(x::LTuple{L}) where {L} = front(x), last(x)
 
-@inline back(x::LTuple{L}) where {L} = back_tuple(x, Val(L - 1))
-@inline firstback(x::LTuple{L}) where {L} = first(x), back(x)
+@inline tail(x::LTuple{L}) where {L} = back_tuple(x, Val(L - 1))
+@inline firsttail(x::LTuple{L}) where {L} = first(x), tail(x)
 
 @pure _tuple_length(T::Type{<:Tuple}) = length(T.parameters)
 @pure _tuple_length(T::Tuple) = length(typeof(T))

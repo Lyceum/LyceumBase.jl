@@ -6,6 +6,15 @@ macro test_inferred(ex)
     esc(ex)
 end
 
+macro test_noalloc(ex)
+    ex = quote
+        local tmp = $BenchmarkTools.@benchmark $ex samples = 1 evals = 1
+        $Test.@test iszero(tmp.allocs)
+    end
+    esc(ex)
+end
+
+
 const TEST_ALONGS = [
     (True(), ),
     (False(), ),
@@ -112,6 +121,36 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
         end
     end
 
+    @testset "copy" begin
+        S1 = makeS(al)
+        S2 = copy(S1)
+        @test parent(S1) !== parent(S2)
+        @test parent(S1) == parent(S2)
+        @test S1.alongs == S2.alongs
+        @test S1 == S2
+    end
+
+    @testset "copyto!" begin
+        S1 = makeS(al)
+        S2 = makeS(al)
+        @assert S1 !== S2
+        @test copyto!(S1, S2) === S1
+        @test S1 == S2
+    end
+
+    @testset "similar" begin
+        A, S = makeAS(al)
+        let B = similar(S)
+            @test size(B) == size(S) && eltype(B) === eltype(S)
+        end
+        let B = similar(S, Int)
+            @test size(B) == size(S) && eltype(B) === Int
+        end
+        let B = similar(S, Int, reverse(size(S)))
+            @test size(B) == reverse(size(S)) && eltype(B) === Int
+        end
+    end
+
     @testset "UnsafeArrays" begin
         S = makeS(al)
         Sv = uview(S)
@@ -126,6 +165,16 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
         @test all(eachindex(S)) do I
             view(parent(S), parentindices(S, I)...) == S[I]
         end
+    end
+
+    @testset "functions" begin
+        A, S = makeAS(al)
+        @test flatten(S) === A
+        @test flatview(S) === A
+        @test innersize(S) == size(first(S))
+        @test inneraxes(S) == axes(first(S))
+        @test_noalloc innersize($S)
+        @test_noalloc inneraxes($S)
     end
 end
 

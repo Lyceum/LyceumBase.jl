@@ -1,21 +1,7 @@
-@generated function check_nestedarray_parameters(::Val{M}, ::Type{T}, ::Val{N}, ::Type{P}) where {M,T,N,P}
+@generated function check_nestedarray_parameters(::Val{M}, ::Type{P}) where {M,P}
     L = ndims(P)
-    !isa(M, Int) && return :(throw(ArgumentError("NestedView parameter M must be of type Int")))
-    !isa(N, Int) && return :(throw(ArgumentError("NestedView parameter N must be of type Int")))
-    !isa(L, Int) && return :(throw(ArgumentError("NestedView parameter L must be of type Int")))
-    M < 0 && return :(throw(DomainError($M, "NestedView parameter M cannot be negative")))
-    N < 0 && return :(throw(DomainError($N, "NestedView parameter N cannot be negative")))
-    L < 0 && return :(throw(DomainError($L, "NestedView parameter L cannot be negative")))
-    eltype(T) != eltype(P) && :(throw(ArgumentError("eltype mismatch in NestedView parameters T and L.")))
-    if M + N != L
-        return :(throw(ArgumentError(
-            "Dimension mismatch in NestedViews paramaters. Got M = $M, N = $N, and ndims(P) = $(ndims(P))"
-        )))
-    end
-    U = eltype(P)
-    if !(T <: AbstractArray{U,M} && P <: AbstractArray{U,L})
-        return :(throw(ArgumentError("Type mismatch in NestedView parameters. Got T = $T and P = $P")))
-    end
+    M isa Int || return :(throw(ArgumentError("NestedView parameter M must be of type Int")))
+    0 <= M <= L || return :(throw(ArgumentError("NestedView parameter M must be in range [0, ndims(parent)]")))
     nothing
 end
 
