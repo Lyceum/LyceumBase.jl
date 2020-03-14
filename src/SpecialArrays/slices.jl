@@ -1,55 +1,29 @@
-# TODO _inneraxes size etc
-# TODO LyceumBase --
-#export True
-#export False
-#
-#
-#abstract type TypedBool end
-#
-#struct True <: TypedBool end
-#
-#struct False <: TypedBool end
-#
-#
-#@inline untyped(::True) = true
-#@inline untyped(::False) = false
-#
-#@inline not(::False) = True()
-#@inline not(::True) = False()
-
-#const TypedBool = TypedFlag
-
-#const TupleN{T,N} = NTuple{N,T}
-#const AbsArr{T,N} = AbstractArray{T,N}
-
-# --------
-
 struct Slices{T,N,P,A} <: AbstractArray{T,N}
     parent::P
     alongs::A
     function Slices{T,N,P,A}(parent, alongs) where {T,N,P,A}
         # TODO check type parameters
+        N::Int
         new(parent, alongs)
     end
 end
 
-@inline function Slices(parent::P, alongs::A) where {P,A}
+@inline function Slices(parent::AbsArr{<:Any,L}, alongs::NTuple{L,StaticBool}) where {L}
     T = viewtype(parent, map(_slice_or_firstindex, alongs, axes(parent)))
-    N = bool_sum(map(not, alongs)...)
-    Slices{T,N,P,A}(parent, alongs)
+    N = unstatic(static_sum(ntuple(dim -> static_not(alongs[dim]), Val(L))))
+    Slices{T,N,typeof(parent),typeof(alongs)}(parent, alongs)
 end
 
-@inline Slices(parent, alongs::TypedBool...) = Slices(parent, alongs)
+@inline function Slices(parent::AbsArr{<:Any,L}, alongs::NTuple{M,StaticOrInt}) where {L,M}
+    Slices(parent, ntuple(dim -> static_in(dim, alongs), Val(L)))
+end
 
-@inline function Slices(parent::AbsArr{<:Any,N}, alongs::Dims) where {N}
-    alongs = map(dim -> dim in alongs ? True() : False(), ntuple(identity, Val(N)))
+@inline function Slices(parent::AbsArr{<:Any,L}, alongs::Vararg{StaticOrInt,M}) where {L,M}
     Slices(parent, alongs)
 end
 
-@inline Slices(parent, alongs::Integer...) = Slices(parent, convert(Dims, alongs))
-
-@inline function Slices(parent::AbsArr{<:Any,N}) where {N}
-    Slices(parent, ntuple(_ -> False(), Val(N)))
+@inline function Slices(parent::AbsArr{<:Any,L}) where {L}
+    Slices(parent, ntuple(_ -> static(false), Val(L)))
 end
 
 
@@ -57,14 +31,16 @@ end
 #### Core Array Interface
 ####
 
-@inline Base.size(S::Slices) = bool_filter(map(not, S.alongs), size(parent(S)))
+@inline Base.size(S::Slices) = static_filter(map(static_not, S.alongs), size(parent(S)))
 
 @propagate_inbounds function Base.getindex(S::Slices{<:Any,N}, I::Vararg{Any,N}) where {N}
-    view(parent(S), parentindices(S, I)...)
+    view(parent(S), parentindices(S, I...)...)
 end
 
-@propagate_inbounds function Base.setindex!(S::Slices{<:Any,N}, v, I::Vararg{Any,N}) where {N}
-    setindex!(parent(S), _maybe_unsqueeze(S, v), parentindices(S, I)...)
+#@propagate_inbounds function Base.setindex!(S::Slices{<:Any,N}, v, I::Vararg{Any,N}) where {N}
+@propagate_inbounds function Base.setindex!(S::Slices{<:Any,N}, v, I::Vararg{Int,N}) where {N}
+    setindex!(parent(S), v, _parentindices(S, I)...)
+    #setindex!(parent(S), _maybe_unsqueeze(S, v), _parentindices(S, I)...)
     return S
 end
 
@@ -72,7 +48,7 @@ Base.IndexStyle(::Type{<:Slices}) = IndexCartesian()
 
 Base.similar(A::Slices, T::Type, dims::Dims) = similar(parent(A), T, dims)
 
-@inline Base.axes(S::Slices) = bool_filter(map(not, S.alongs), axes(parent(S)))
+@inline Base.axes(S::Slices) = static_filter(map(static_not, S.alongs), axes(parent(S)))
 
 
 ####
@@ -94,32 +70,41 @@ function Base.copyto!(dest::Slices, src::Slices)
     copyto!(parent(dest), parent(src))
     return dest
 end
+@inline Base.copyto!(dest::AbsNestedArr, src::Slices) = nest!(dest, parent(src))
+@inline function Base.copyto!(dest::Slices, src::AbsNestedArr)
+    flatten!(parent(dest), src)
+    return dest
+end
 
 Base.copy(S::Slices) = typeof(S)(copy(parent(S)), S.alongs)
 
+# TODO dont' extend Base?
+@inline function Base.parentindices(S::Slices{<:Any,N}, I::Vararg{Any,N}) where {N}
+    _parentindices(S, I)
+end
 
-@inline Base.parentindices(S::Slices, I...) = parentindices(S, I)
 # TODO safe to use Base._ind2sub?
-@inline Base.parentindices(S::Slices, i::Int) = parentindices(S, Base._ind2sub(axes(S), i))
+@inline Base.parentindices(S::Slices, i::Int) = _parentindices(S, Base._ind2sub(axes(S), i))
+@inline function Base.parentindices(S::Slices{<:Any,1}, i::Int) # method ambiguity
+    _parentindices(S, Base._ind2sub(axes(S), i))
+end
+@inline Base.parentindices(S::Slices, I::CartesianIndex) = _parentindices(S, Tuple(I))
 
-@inline Base.parentindices(S::Slices, I::CartesianIndex) = parentindices(S, Tuple(I))
-
-@inline function Base.parentindices(S::Slices{<:Any,N}, I::NTuple{N}) where {N}
+@inline function _parentindices(S::Slices{<:Any,N}, I::NTuple{N,Any}) where {N}
     # TODO can't checkbounds here if parent(S) has non-standard indexing e.g. AxisArrays
     # results in "ArgumentError: unable to check bounds for indices of type Symbol"
     # Validity of returned indices is therefore not guaranteed
     #@boundscheck checkbounds(S, I...)
-    _parentindices(axes(parent(S)), map(not, S.alongs), I)
+    _parentindices(axes(parent(S)), map(static_not, S.alongs), I)
 end
 
-@inline function _parentindices(parentaxes::Tuple, alongs::Tuple, I::Tuple)
-    if untyped(first(alongs))
+@inline function _parentindices(parentaxes::NTuple{L,Any}, alongs::Tuple{Vararg{StaticBool,L}}, I::NTuple{N,Any}) where {L,N}
+    if unstatic(first(alongs))
         (first(I), _parentindices(tail(parentaxes), tail(alongs), tail(I))...)
     else
         (Base.Slice(first(parentaxes)), _parentindices(tail(parentaxes), tail(alongs), I)...)
     end
 end
-
 _parentindices(parentaxes::Tuple{}, alongs::Tuple{}, I::Tuple{}) = ()
 
 
@@ -134,35 +119,30 @@ _parentindices(parentaxes::Tuple{}, alongs::Tuple{}, I::Tuple{}) = ()
 #### SpecialArrays functions
 ####
 
-@inline flatten(S::Slices) = parent(S)
+@inline flatten(S::Slices) = copy(parent(S))
 
-@inline flatview(S::Slices) = flatten(S)
+@inline flatview(S::Slices) = parent(S)
 
-@inline innersize(S::Slices) = bool_filter(S.alongs, size(parent(S)))
+@inline innersize(S::Slices) = static_filter(S.alongs, size(parent(S)))
 
-@inline inneraxes(S::Slices) = bool_filter(S.alongs, axes(parent(S)))
+@inline inneraxes(S::Slices) = static_filter(S.alongs, axes(parent(S)))
 
 
 ####
 #### Util
 ####
 
-@inline function _slice_or_firstindex(switch::TypedBool, ax)
-    untyped(switch) ? Base.Slice(ax) : first(ax)
+@inline function _slice_or_firstindex(flag::StaticBool, ax)
+    unstatic(flag) ? Base.Slice(ax) : first(ax)
 end
 
 @inline _maybe_unsqueeze(S::Slices{<:AbsArr{<:Any,0}}, v::AbsArr{<:Any,0}) = v[]
 @inline _maybe_unsqueeze(S::Slices, v) = v
 
-@inline bool_sum(xs::TypedBool...) = length(_bool_sum(xs...))
-@inline _bool_sum(::True, xs::TypedBool...) = (True(), _bool_sum(xs...)...)
-@inline _bool_sum(::False, xs::TypedBool...) = (_bool_sum(xs...)...,)
-_bool_sum() = ()
-
 @inline function bool_filter(switches::NTuple{N,Any}, xs::NTuple{N,Any}) where {N}
     (bool_filter1(first(switches), first(xs))..., bool_filter(tail(switches), tail(xs))...)
 end
 bool_filter(::Tuple{}, ::Tuple{}) = ()
-@inline bool_filter1(::True, x) = (x, )
-@inline bool_filter1(::False, ::Any) = ()
+@inline bool_filter1(::StaticTrue, x) = (x, )
+@inline bool_filter1(::StaticFalse, ::Any) = ()
 # --

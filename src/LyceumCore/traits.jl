@@ -1,8 +1,3 @@
-wrapval(x) = Val(x)
-wrapval(v::Val) = v
-
-unwrapval(x) = x
-unwrapval(::Val{x}) where {x} = x
 
 
 abstract type TypedBool end

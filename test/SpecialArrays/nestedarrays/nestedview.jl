@@ -2,39 +2,6 @@ const RAND_TEST_SIZES = (2,3,2,4,5)
 const TEST_M = 0:5
 const TEST_U = (Int, Float64)
 
-function randtest(T::Type, ::Val{M}, ::Val{N}) where {M,N}
-    dims = ntuple(i -> 2i, Val(M + N))
-    M_dims, N_dims = SpecialArrays.split_tuple(dims, Val(M))
-    nested = Array{Array{T, M}, N}(undef, N_dims...)
-    for i in eachindex(nested)
-        x = rand!(zeros(T, M_dims...))
-        nested[i] = x
-    end
-    flat = reshape(mapreduce(vec, vcat, nested), dims)
-    return nested, flat
-end
-
-nones(::Val{N}) where {N} = ntuple(_ -> 1, Val(N))
-
-@testset "NestedVector" begin
-    @test begin
-        A = NestedView{0}(zeros(10))
-        resize!(A, length(A) + 10)
-        length(A) == 20
-    end
-    A = @inferred(NestedView{0}(zeros(0)))
-    xs = Array{Float64,0}[]
-    for i=1:10
-        x = zeros()
-        x .= i
-        push!(A, x)
-        push!(xs, x)
-    end
-    for i=1:10
-        @test A[i] == xs[i]
-    end
-end
-
 @testset "NestedView M = $M, N=$N" for M in 0:3, N in 0:3, U in (Float64, Int)
     # TODO https://github.com/JuliaArrays/StaticArrays.jl/issues/705
     if M == N == 0
@@ -43,41 +10,12 @@ end
     end
 
     L = M + N
-    T = let (_, flat) = randtest(U, Val(M), Val(N))
-        typeof(view(flat, ncolons(Val(M))..., ntuple(i -> firstindex(flat, M + i), Val(N))...))
+    T = let (_, flat) = randNA(U, static(M), static(N))
+        typeof(view(flat, ncolons(M)..., ntuple(i -> firstindex(flat, M + i), Val(N))...))
     end
-
-    @testset "copyto!" begin
-        let
-            nested, flat = randtest(U, Val(M), Val(N))
-            dest = NestedView{M}(similar(flat))
-            src = NestedView{M}(flat)
-            @assert dest != src
-            copyto!(dest, src)
-            @test dest == src
-        end
-        let
-            nested, flat = randtest(U, Val(M), Val(N))
-            src = NestedView{M}(flat)
-            copyto!(nested, src)
-            @test all(zip(nested, src)) do (x, y)
-                x == y
-            end
-        end
-        let
-            nested, flat = randtest(U, Val(M), Val(N))
-            dest = NestedView{M}(flat)
-            copyto!(dest, nested)
-            @test all(zip(dest, nested)) do (x, y)
-                x == y
-            end
-        end
-    end
-
-    continue
 
     @testset "misc array interface" begin
-        _, flat = randtest(U, Val(M), Val(N))
+        _, flat = randNA(U, static(M), static(N))
         A = @inferred(NestedView{M}(flat))
 
         @test @inferred(size(A)) == size(flat)[(M+1):(M+N)]
@@ -97,23 +35,61 @@ end
     end
 
     @testset "getindex/setindex!" begin
-        _, flat = randtest(U, Val(M), Val(N))
-        A = @inferred(NestedView{M}(flat))
-
-        @test IndexStyle(A) === IndexStyle(A.slices)
-        let I = nones(Val(N)), x = getindex(flat, ncolons(Val(M))..., I...)
-            @test _maybe_unsqueeze(@inferred(getindex(A, I...))) == x
-        end
-        let B = @inferred(getindex(A, :))
+        let
+            _, flat = randNA(U, static(M), static(N))
+            A = @inferred(NestedView{M}(flat))
+            I = nones(Val(N))
+            @test IndexStyle(A) === IndexStyle(A.slices)
+            @test _maybe_unsqueeze(@inferred(getindex(A, I...))) == getindex(flat, ncolons(M)..., I...)
+            B = @inferred(getindex(A, :))
             @test size(B) == (length(A), )
             @test parent(B) !== parent(A)
             @test vec(parent(B)) == vec(parent(A))
         end
+        let
+            _, flat = randNA(U, static(M), static(N))
+            A = NestedView{M}(flat)
+            x = Array(first(A))
+            rand!(x)
+            @test first(A) != x && @inferred(setindex!(A, x, 1)) === A && first(A) == x
+        end
+    end
+
+    @testset "copyto!" begin
+        let
+            _, flat1 = randNA(U, static(M), static(N))
+            _, flat2 = randNA(U, static(M), static(N))
+            dest = NestedView{M}(flat1)
+            src = NestedView{M}(flat2)
+            @test copyto!(dest, src) === dest
+            @test dest == src
+        end
+        let
+            dest, _ = randNA(U, static(M), static(N))
+            _, flat = randNA(U, static(M), static(N))
+            src = NestedView{M}(flat)
+            @test copyto!(dest, src) === dest
+            @test dest == src
+        end
+        let
+            src, _ = randNA(U, static(M), static(N))
+            _, flat = randNA(U, static(M), static(N))
+            dest = NestedView{M}(flat)
+            @test copyto!(dest, src) === dest
+            @test dest == src
+        end
+    end
+
+    @testset "similar" begin
+        _, flat = randNA(U, static(M), static(N))
+        A = @inferred(NestedView{M}(flat))
+        B = similar(A)
+        @test typeof(A) == typeof(B) && axes(A) == axes(B)
     end
 
     if N > 0
         @testset "resize!" begin
-            _, flat = randtest(U, Val(M), Val(N))
+            _, flat = randNA(U, static(M), static(N))
             A = @inferred(NestedView{M}(ElasticArray(flat)))
             dims, lastdim = Base.front(size(A)), last(size(A))
             resize!(A, dims..., lastdim + 1)
@@ -121,44 +97,47 @@ end
         end
     end
 
-    @testset "copy/deepcopy" begin
-        _, flat = randtest(U, Val(M), Val(N))
-        A = @inferred(NestedView{M}(flat))
-
-        @test A == NestedView{M}(copy(flat))
-
-        B = deepcopy(A)
-        @test all(eachindex(A)) do I
-            B[I] == A[I]
-        end
-
-        for I=eachindex(A)
-            x = similar(A[I])
-            rand!(x)
-            setindex!(A, x, Tuple(I)...)
-        end
-        @test all(eachindex(A)) do I
-            B[I] != A[I]
-        end
-    end
-
     @testset "functions" begin
-        _, flat = randtest(U, Val(M), Val(N))
+        _, flat = randNA(U, static(M), static(N))
         A = NestedView{M}(flat)
         @test flatview(A) === flat
-        @test innereltype(typeof(A)) == eltype(typeof(flat)) == U
-        @test innersize(A) == size(flat)[1:M]
         @test inneraxes(A) == axes(flat)[1:M]
-        @test innerndims(typeof(A)) == M
-        @test innerlength(A) == prod(size(flat)[1:M])
-        @test innerndims(innerview(flat, Val(M))) == ndims(outerview(flat, Val(M)))
+        @test innersize(A) == size(flat)[1:M]
 
-        let B = nestedview(flat, M)
-            @test A == B && typeof(A) === typeof(B)
-        end
-        let B = nestedview(flat, N, false)
-            @test A == B && typeof(A) === typeof(B)
-        end
+        @test @inferred(nestedview(flat, static(M))) isa NestedView{M,<:Any,N}
+        @test @inferred(nestedview(flat, static(M), inner = static(false))) isa NestedView{N,<:Any,M}
+    end
+end
+
+@testset "similar" begin
+    M = 2
+    N = 3
+    A = NestedView{M}(last(randNA(Float64, M, N)))
+    @test_throws ArgumentError similar(A, Array{Float64, M+1})
+    let B = similar(A, Array{Int,M})
+        @test size(B) == size(A) && typeof(B) <: NestedView{M,<:AbsArr{Int,M}, N}
+    end
+    let newdims = (map(d -> d + 1, size(A))..., 10), B = similar(A, Array{Int,M}, newdims)
+        @test size(B) == newdims && typeof(B) <: NestedView{M,<:AbsArr{Int,M}, N + 1}
+    end
+end
+
+@testset "NestedVector" begin
+    @test begin
+        A = NestedView{0}(zeros(10))
+        resize!(A, length(A) + 10)
+        length(A) == 20
+    end
+    A = @inferred(NestedView{0}(zeros(0)))
+    xs = Array{Float64,0}[]
+    for i=1:10
+        x = zeros()
+        x .= i
+        push!(A, x)
+        push!(xs, x)
+    end
+    for i=1:10
+        @test A[i] == xs[i]
     end
 end
 
