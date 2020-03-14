@@ -7,6 +7,7 @@ using Shapes
 using BenchmarkTools: @benchmark
 using DocStringExtensions
 using Reexport
+using StaticNumbers
 
 
 include("LyceumCore/LyceumCore.jl")

@@ -1,42 +1,25 @@
-# TODO move
-macro test_inferred(ex)
-    ex = quote
-        $Test.@test (($Test.@inferred $ex); true)
-    end
-    esc(ex)
-end
-
-macro test_noalloc(ex)
-    ex = quote
-        local tmp = $BenchmarkTools.@benchmark $ex samples = 1 evals = 1
-        $Test.@test iszero(tmp.allocs)
-    end
-    esc(ex)
-end
-
-
 const TEST_ALONGS = [
-    (True(), ),
-    (False(), ),
+    #(static(true), ),
+    #(static(false), ),
 
-    # 0 slices
-    (False(), False(), False()),
-    # 1 slices
-    (False(), False(), True()),
-    (False(), True(), False()),
-    (True(), False(), False()),
-    # 2 slices
-    (True(), True(), False()),
-    (True(), False(), True()),
-    (False(), True(), True()),
+    ## 0 slices
+    #(static(false), static(false), static(false)),
+    ## 1 slices
+    #(static(false), static(false), static(true)),
+    #(static(false), static(true), static(false)),
+    #(static(true), static(false), static(false)),
+    ## 2 slices
+    #(static(true), static(true), static(false)),
+    #(static(true), static(false), static(true)),
+    (static(false), static(true), static(true)),
     # all slices
-    (True(), True(), True()),
+    #(static(true), static(true), static(true)),
 ]
 
-makeA(al::Tuple) = rand(ntuple(i -> i + 1, length(al))...)
-makeS(al::Tuple) = Slices(makeA(al), al)
-function makeAS(al::Tuple)
-    A = makeA(al)
+randA(al::Tuple) = rand(ntuple(i -> i + 1, length(al))...)
+randS(al::Tuple) = Slices(randA(al), al)
+function randAS(al::Tuple)
+    A = randA(al)
     S = Slices(A, al)
     return A, S
 end
@@ -72,16 +55,16 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
     V = Float64 # TODO other types?
 
     @testset "constructors" begin
-        @test_inferred Slices(makeA(al), al)
-        @test_inferred Slices(makeA(al), al...)
-        @test typeof(Slices(makeA(al), al)) === typeof(Slices(makeA(al), todims(al)))
-        @test typeof(Slices(makeA(al), al...)) === typeof(Slices(makeA(al), todims(al)))
-        @test typeof(Slices(makeA(al), al)) === typeof(Slices(makeA(al), todims(al)...))
-        @test typeof(Slices(makeA(al), al...)) === typeof(Slices(makeA(al), todims(al)...))
+        @test_inferred Slices(randA(al), al)
+        @test_inferred Slices(randA(al), al...)
+        @test typeof(Slices(randA(al), al)) === typeof(Slices(randA(al), todims(al)))
+        @test typeof(Slices(randA(al), al...)) === typeof(Slices(randA(al), todims(al)))
+        @test typeof(Slices(randA(al), al)) === typeof(Slices(randA(al), todims(al)...))
+        @test typeof(Slices(randA(al), al...)) === typeof(Slices(randA(al), todims(al)...))
     end
 
     @testset "misc array interface" begin
-        A, S = makeAS(al)
+        A, S = randAS(al)
 
         # outer
         @test ndims(S) == N
@@ -99,30 +82,53 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
         @test eltype(S) == typeof(first(S))
     end
 
-    @testset "getindex/setindex!" begin
-        let
-            S = makeS(al)
-            x = makeelement(S)
-            @test setindex!(S, x, firstindex(S)) === S
-        end
+    #@testset "getindex/setindex!" begin
+    #    let
+    #        S = randS(al)
+    #        x = Array(first(S))
+    #        rand!(x)
+    #        @test first(S) != x && @inferred(setindex!(S, x, firstindex(S))) === S && first(S) == x
+    #    end
 
-        let
-            A, S = makeAS(al)
-            nested = Array{Array{V, M}, N}(undef, outsize(axes(A), al))
-            for i in eachindex(nested)
-                nested[i] = makeelement(S)
-            end
-            for i in eachindex(S, nested)
-                S[i] = nested[i]
-            end
-            @test all(eachindex(S, nested)) do i
-                S[i] == nested[i]
-            end
-        end
-    end
+    #    let
+    #        #A, S = randAS(al)
+    #        for i in eachindex(S, nested)
+    #            S[i] = nested[i]
+    #        end
+    #        @test S == nested
+    #        #@test all(eachindex(S, nested)) do i
+    #        #    S[i] == nested[i]
+    #        #end
+    #    end
+    #end
+
+    #@testset "copyto!" begin
+    #    let
+    #        _, flat1 = randNA(U, static(M), static(N))
+    #        _, flat2 = randNA(U, static(M), static(N))
+    #        dest = NestedView{M}(flat1)
+    #        src = NestedView{M}(flat2)
+    #        @test copyto!(dest, src) === dest
+    #        @test dest == src
+    #    end
+    #    let
+    #        dest, _ = randNA(U, static(M), static(N))
+    #        _, flat = randNA(U, static(M), static(N))
+    #        src = NestedView{M}(flat)
+    #        @test copyto!(dest, src) === dest
+    #        @test dest == src
+    #    end
+    #    let
+    #        src, _ = randNA(U, static(M), static(N))
+    #        _, flat = randNA(U, static(M), static(N))
+    #        dest = NestedView{M}(flat)
+    #        @test copyto!(dest, src) === dest
+    #        @test dest == src
+    #    end
+    #end
 
     @testset "copy" begin
-        S1 = makeS(al)
+        S1 = randS(al)
         S2 = copy(S1)
         @test parent(S1) !== parent(S2)
         @test parent(S1) == parent(S2)
@@ -131,15 +137,15 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
     end
 
     @testset "copyto!" begin
-        S1 = makeS(al)
-        S2 = makeS(al)
+        S1 = randS(al)
+        S2 = randS(al)
         @assert S1 !== S2
         @test copyto!(S1, S2) === S1
         @test S1 == S2
     end
 
     @testset "similar" begin
-        A, S = makeAS(al)
+        A, S = randAS(al)
         let B = similar(S)
             @test size(B) == size(S) && eltype(B) === eltype(S)
         end
@@ -152,13 +158,13 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
     end
 
     @testset "UnsafeArrays" begin
-        S = makeS(al)
+        S = randS(al)
         Sv = uview(S)
         @test parent(Sv) isa UnsafeArray{eltype(parent(S)), ndims(parent(S))}
     end
 
     @testset "parentindices" begin
-        S = makeS(al)
+        S = randS(al)
         @test all(zip(LinearIndices(S), CartesianIndices(S))) do (i, I)
             parentindices(S, i) == parentindices(S, I) == parentindices(S, Tuple(I)) == parentindices(S, Tuple(I)...)
         end
@@ -168,7 +174,7 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
     end
 
     @testset "functions" begin
-        A, S = makeAS(al)
+        A, S = randAS(al)
         @test flatten(S) === A
         @test flatview(S) === A
         @test innersize(S) == size(first(S))
@@ -180,7 +186,7 @@ end
 
 @testset "AxisArrays" begin
     A = AxisArrays.AxisArray(rand(2, 3), [:a, :b], [:x, :y, :z])
-    S = Slices(A, True(), False())
+    S = Slices(A, static(true), static(false))
     @test S[:x] == A[:, :x]
 end
 

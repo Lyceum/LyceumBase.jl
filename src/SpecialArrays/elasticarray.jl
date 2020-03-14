@@ -208,7 +208,7 @@ end
 ####
 
 @inline function _split_resize_dims(A::ElasticArray, dims::IDims{N}) where {N}
-    kernel_size, size_lastdim = frontlast(dims)
+    kernel_size, size_lastdim = front(dims), last(dims)
     if kernel_size != A.kernel_size
         throw(ArgumentError("Can only resize last dimension of an ElasticArray"))
     end

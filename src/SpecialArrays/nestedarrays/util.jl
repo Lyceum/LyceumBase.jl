@@ -1,6 +1,6 @@
 @generated function check_nestedarray_parameters(::Val{M}, ::Type{P}) where {M,P}
     L = ndims(P)
-    M isa Int || return :(throw(ArgumentError("NestedView parameter M must be of type Int")))
+    M isa StaticOrInt || return :(throw(ArgumentError("NestedView parameter M must be of type $(StaticOrInt)")))
     0 <= M <= L || return :(throw(ArgumentError("NestedView parameter M must be in range [0, ndims(parent)]")))
     nothing
 end
