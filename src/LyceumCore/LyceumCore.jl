@@ -3,6 +3,7 @@ module LyceumCore
 using Base: @pure
 
 using ..StaticNumbers
+using ..BenchmarkTools
 
 const Maybe{T} = Union{T,Nothing}
 
@@ -32,7 +33,10 @@ export StaticTrue, StaticFalse, StaticOr
 export static_not, static_in, static_sum, static_filter
 include("static.jl")
 
-export ncolons, front, tail, split, tuple_length
+export ncolons, front, tail, tuplesplit, tuple_length
 include("util.jl")
+
+export @test_inferred, @test_noalloc
+include("testutil.jl")
 
 end

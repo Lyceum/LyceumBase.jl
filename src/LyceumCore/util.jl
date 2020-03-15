@@ -11,7 +11,7 @@ const LTuple{L} = Tuple{Vararg{<:Any,L}}
 end
 @inline tail(t::LTuple{L}) where {L} = tail(t, static(L - 1))
 
-@inline function split(t::LTuple{L}, m::Integer) where {L}
+@inline function tuplesplit(t::LTuple{L}, m::Integer) where {L}
     n = @stat static(L) - m
     front(t, m), tail(t, n)
 end

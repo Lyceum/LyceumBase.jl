@@ -4,7 +4,7 @@ using Base: @propagate_inbounds
 using Test
 using Random
 using Shapes
-using BenchmarkTools: @benchmark
+using BenchmarkTools: BenchmarkTools
 using DocStringExtensions
 using Reexport
 using StaticNumbers
@@ -23,6 +23,7 @@ include("setfield.jl")
 #### Interfaces
 ####
 
+# TODO MOVE
 """
     tconstruct(T::Type, n::Integer, args...; kwargs...) --> NTuple{n, <:T}
 
@@ -37,42 +38,31 @@ function tconstruct(T::Type, n::Integer, args...; kwargs...)
 end
 export tconstruct
 
-export
-    AbstractEnvironment,
-
-    statespace,
-    getstate!,
-    setstate!,
-    getstate,
-
-    obsspace,
-    getobs!,
-    getobs,
-
-    actionspace,
-    getaction!,
-    setaction!,
-    getaction,
-
-    rewardspace,
-    getreward,
-
-    evalspace,
-    geteval,
-
-    reset!,
-    randreset!,
-    step!,
-    isdone,
-    timestep,
-    spaces
+export AbstractEnvironment
+export statespace, getstate!, setstate!, getstate
+export obsspace, getobs!, getobs
+export actionspace, getaction!, setaction!, getaction
+export rewardspace, getreward
+export evalspace, geteval
+export reset!, randreset!
+export step!, isdone, timestep
+export spaces
 include("abstractenvironment.jl")
 
 
+####
+#### Submodules
+####
+
+include("TestUtils/TestUtils.jl")
+using .TestUtils
+
 export SpecialArrays
 include("SpecialArrays/SpecialArrays.jl")
+using .SpecialArrays
 
 export Tools
 include("Tools/Tools.jl")
+using .Tools
 
 end # module

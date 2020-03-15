@@ -29,6 +29,14 @@ end
     return static(false)
 end
 
+@pure function static_findfirst(x::StaticOr, itr::NTuple{N,StaticOr}) where {N}
+    for i = 1:N
+        x == itr[i] && return static(i)
+    end
+    return nothing
+end
+
+
 
 @inline static_sum(xs::Tuple{Vararg{StaticInteger}}) = _static_sum(xs)
 @inline static_sum(xs::StaticInteger...) = _static_sum(xs)

@@ -13,7 +13,6 @@ using Shapes
 const IDims{N} = NTuple{N,Integer}
 const IVararg{N} = Vararg{Integer,N}
 
-include("util.jl")
 include("viewtype.jl")
 
 export flatten, flatten!, nest, nest!
