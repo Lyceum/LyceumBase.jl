@@ -1,6 +1,6 @@
 const TEST_ALONGS = [
-    #(static(true), ),
-    #(static(false), ),
+    (static(true), ),
+    (static(false), ),
 
     ## 0 slices
     #(static(false), static(false), static(false)),
@@ -16,119 +16,165 @@ const TEST_ALONGS = [
     #(static(true), static(true), static(true)),
 ]
 
-randA(al::Tuple) = rand(ntuple(i -> i + 1, length(al))...)
-randS(al::Tuple) = Slices(randA(al), al)
-function randAS(al::Tuple)
-    A = randA(al)
-    S = Slices(A, al)
-    return A, S
-end
 
-function todims(al::Tuple)
-    dims = Int[]
-    for (i, a) in enumerate(al)
-        SpecialArrays.untyped(a) && push!(dims, i)
+randA(T::Type, al::NTuple{N,StaticBool}) where {N} = randA(T, static(N))
+randA(al::TupleN{StaticBool}) = randA(DEFAULT_ELTYPE, al)
+
+randS(T::Type, al::TupleN{StaticBool}) = Slices(randA(T, al), al)
+randS(al::TupleN{StaticBool}) = randS(DEFAULT_ELTYPE)
+
+randAS(T::Type, al::TupleN{StaticBool}) = (A = randA(T, al); return A, Slices(A, al))
+randAS(al::TupleN{StaticBool}) = randAS(DEFAULT_ELTYPE, al)
+
+function randN(T::Type, al::NTuple{N,StaticBool}) where {N}
+    dims = testdims(N)
+    innersz = Tuple(dims[i] for i in 1:length(al) if unstatic(al[i]))
+    outersz = Tuple(dims[i] for i in 1:length(al) if !unstatic(al[i]))
+    return randN(T, innersz, outersz)
+end
+randN(al::TupleN{StaticBool}) = randN(DEFAULT_ELTYPE, al)
+
+
+
+@testset "Slices $V $(slicedims(al))" for V in (Float64, ), al in TEST_ALONGS
+    sdims = slicedims(al)
+    dims = map(unstatic, sdims)
+
+    inaxes, outaxes = let A = randA(V, al)
+        inaxes = Tuple(axes(A, i) for i in 1:length(al) if unstatic(al[i]))
+        outaxes = Tuple(axes(A, i) for i in 1:length(al) if !unstatic(al[i]))
+        inaxes, outaxes
     end
-    Tuple(dims)
-end
+    insize = map(length, inaxes)
+    outsize = map(length, outaxes)
 
-function inaxes(parentaxes::Tuple, al::Tuple)
-    s = []
-    for i = eachindex(parentaxes)
-        SpecialArrays.untyped(al[i]) && push!(s, parentaxes[i])
-    end
-    Tuple(s)
-end
-outaxes(parentaxes::Tuple, al::Tuple) = inaxes(parentaxes, map(SpecialArrays.not, al))
+    M = length(insize)
+    N = length(outsize)
+    ST = Slices{<:AbsArr{V,M},N,M,Array{V,M+N},typeof(al)}
 
-insize(parentaxes::Tuple, al::Tuple) = map(length, inaxes(parentaxes, al))
-outsize(parentaxes::Tuple, al::Tuple) = map(length, outaxes(parentaxes, al))
-
-# Need to construct element with zeros for 0-dimensional elements
-makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
-
-@testset "Slices $(todims(al))" for al in TEST_ALONGS
-    dims = todims(al)
-    L = length(al)
-    M = length(dims)
-    N = L - M
-    V = Float64 # TODO other types?
 
     @testset "constructors" begin
-        @test_inferred Slices(randA(al), al)
-        @test_inferred Slices(randA(al), al...)
-        @test typeof(Slices(randA(al), al)) === typeof(Slices(randA(al), todims(al)))
-        @test typeof(Slices(randA(al), al...)) === typeof(Slices(randA(al), todims(al)))
-        @test typeof(Slices(randA(al), al)) === typeof(Slices(randA(al), todims(al)...))
-        @test typeof(Slices(randA(al), al...)) === typeof(Slices(randA(al), todims(al)...))
+        @test typeof(@inferred(Slices(randA(al), al))) <: ST
+        @test typeof(@inferred(Slices(randA(al), al...))) <: ST
+        @test typeof(Slices(randA(al), dims)) <: ST
+        @test typeof(Slices(randA(al), dims...)) <: ST
+        @test typeof(@inferred(Slices(randA(al), sdims))) <: ST
+        @test typeof(@inferred(Slices(randA(al), sdims...))) <: ST
     end
 
     @testset "misc array interface" begin
         A, S = randAS(al)
 
         # outer
+        @test eltype(S) <: AbsArr{V,M}
         @test ndims(S) == N
-        @test axes(S) == outaxes(axes(A), al)
-        @test size(S) == outsize(axes(A), al)
-        @test IndexStyle(S) == IndexCartesian()
-        @test Base.dataids(S) == Base.dataids(A)
-        @test parent(S) === A
+        @test @inferred(axes(S)) == outaxes
+        @test @inferred(size(S)) == outsize
+        @test length(S) == prod(outsize)
+        @test @inferred(IndexStyle(S)) == IndexCartesian()
+        @test @inferred(Base.dataids(S)) == Base.dataids(A)
+        @test @inferred(parent(S)) === A
 
         # inner
+        @test eltype(first(S)) == V
         @test ndims(first(S)) == M
-        @test axes(first(S)) == inaxes(axes(A), al)
-        @test size(first(S)) == insize(axes(A), al)
-        @test eltype(S) <: AbstractArray{eltype(A), M}
-        @test eltype(S) == typeof(first(S))
+        @test axes(first(S)) == inaxes
+        @test size(first(S)) == insize
+        @test length(first(S)) == prod(insize)
+        @test typeof(first(S)) == eltype(S)
     end
 
-    #@testset "getindex/setindex!" begin
-    #    let
-    #        S = randS(al)
-    #        x = Array(first(S))
-    #        rand!(x)
-    #        @test first(S) != x && @inferred(setindex!(S, x, firstindex(S))) === S && first(S) == x
-    #    end
+    @testset "getindex/setindex!" begin
+        let S = randS(V, al), x = rand!(zeros(V, insize...))
+            @test @inferred(setindex!(S, x, firstindex(S))) === S && first(S) == x
+        end
 
-    #    let
-    #        #A, S = randAS(al)
-    #        for i in eachindex(S, nested)
-    #            S[i] = nested[i]
-    #        end
-    #        @test S == nested
-    #        #@test all(eachindex(S, nested)) do i
-    #        #    S[i] == nested[i]
-    #        #end
-    #    end
-    #end
+        let S = randS(V, al), nested = randN(V, al)
+            for I in eachindex(S, nested)
+                S[I] = nested[I]
+            end
+            @test all(zip(LinearIndices(S), CartesianIndices(S))) do (I, J)
+                S[I] == S[J] == nested[I]
+            end
+        end
 
-    #@testset "copyto!" begin
-    #    let
-    #        _, flat1 = randNA(U, static(M), static(N))
-    #        _, flat2 = randNA(U, static(M), static(N))
-    #        dest = NestedView{M}(flat1)
-    #        src = NestedView{M}(flat2)
-    #        @test copyto!(dest, src) === dest
-    #        @test dest == src
-    #    end
-    #    let
-    #        dest, _ = randNA(U, static(M), static(N))
-    #        _, flat = randNA(U, static(M), static(N))
-    #        src = NestedView{M}(flat)
-    #        @test copyto!(dest, src) === dest
-    #        @test dest == src
-    #    end
-    #    let
-    #        src, _ = randNA(U, static(M), static(N))
-    #        _, flat = randNA(U, static(M), static(N))
-    #        dest = NestedView{M}(flat)
-    #        @test copyto!(dest, src) === dest
-    #        @test dest == src
-    #    end
-    #end
+        # Colon
+        let S = randS(V, al), B = @inferred(S[:])
+            @test typeof(B) <: Array{<:AbsArr{V,M},N}
+            @test size(S) == size(B)
+            @test innersize(S) == innersize(B)
+        end
+        let S = randS(V, al), B = [rand!(similar(el)) for el in S]
+            S[:] = B
+            @test S == B
+        end
+    end
+
+    @testset "similar" begin
+        S = randS(V, al)
+        U = V === Float64 ? Int : Float64
+
+        let B = @inferred(similar(S))
+            @test typeof(B) <: Slices{<:AbsArr{V,M},N,M,Array{V,M+N}}
+            @test size(B) == size(S)
+            @test size(first(B)) == size(first(S))
+            @test B.alongs == Tuple(sort([el for el in S.alongs], rev=true))
+        end
+        let B = @inferred(similar(S, Array{U})), C = @inferred(similar(S, U))
+            @test typeof(B) == typeof(C)
+            @test typeof(B) <: Slices{<:AbsArr{U,M},N,M,Array{U,M+N}}
+            @test size(B) == size(C) == size(S)
+            @test size(first(B)) == size(first(C)) == size(first(S))
+            @test B.alongs == Tuple(sort([el for el in S.alongs], rev=true))
+        end
+        if N > 1
+            newdims = reverse(size(S))
+            let B = @inferred(similar(S, newdims))
+                @test typeof(B) <: Slices{<:AbsArr{U,M},N,M,Array{U,M+N}}
+                @test size(B) == newdims
+                @test size(first(B)) == size(first(S))
+                @test B.alongs == Tuple(sort([el for el in S.alongs], rev=true))
+            end
+            let B = @inferred(similar(S, Array{U}, newdims)), C = @inferred(similar(S, U, newdims))
+                @test typeof(B) == typeof(C)
+                @test typeof(B) <: Slices{<:AbsArr{U,M},N,M,Array{U,M+N}}
+                @test size(B) == size(C) == newdims
+                @test size(first(B)) == size(first(C)) == size(first(S))
+                @test B.alongs == C.alongs == Tuple(sort([el for el in S.alongs], rev=true))
+            end
+        end
+    end
+
+    @testset "copyto!" begin
+        # size(dest) == size(src)
+        let dest = randS(V, al), src = randS(V, al)
+            @test copyto!(dest, src) === dest
+            @test dest == src
+        end
+        let dest = randS(V, al), src = randN(V, al)
+            @test copyto!(dest, src) === dest
+            @test dest == src
+        end
+        let dest = randN(V, al), src = randS(V, al)
+            @test copyto!(dest, src) === dest
+            @test dest == src
+        end
+
+        # size(dest) != size(src)
+        if N != 1
+            let dest = randS(V, al), src = vec(randN(V, al))
+                @test copyto!(dest, src) === dest
+                N == 0 ? @test(dest[] == first(src)) : @test(dest == src)
+            end
+            let dest = vec(randN(V, al)), src = randS(V, al)
+                @test copyto!(dest, src) === dest
+                N == 0 ? @test(dest[] == first(src)) : @test(dest == src)
+            end
+        end
+    end
 
     @testset "copy" begin
-        S1 = randS(al)
+        S1 = randS(V, al)
         S2 = copy(S1)
         @test parent(S1) !== parent(S2)
         @test parent(S1) == parent(S2)
@@ -136,73 +182,39 @@ makeelement(S::Slices) = rand!(zeros(eltype(parent(S)), size(first(S))...))
         @test S1 == S2
     end
 
-    @testset "copyto!" begin
-        S1 = randS(al)
-        S2 = randS(al)
-        @assert S1 !== S2
-        @test copyto!(S1, S2) === S1
-        @test S1 == S2
-    end
+    @testset "functions" begin
+        S = randS(V, al)
 
-    @testset "similar" begin
-        A, S = randAS(al)
-        let B = similar(S)
-            @test size(B) == size(S) && eltype(B) === eltype(S)
+        let B = @inferred(flatten(S))
+            @test B !== parent(S) && B == parent(S)
         end
-        let B = similar(S, Int)
-            @test size(B) == size(S) && eltype(B) === Int
-        end
-        let B = similar(S, Int, reverse(size(S)))
-            @test size(B) == reverse(size(S)) && eltype(B) === Int
-        end
+        @test @inferred(flatview(S)) === parent(S)
+
+        @test @inferred(innersize(S)) == size(first(S))
+        @test @inferred(inneraxes(S)) == axes(first(S))
+        @test_noalloc innersize($S)
+        @test_noalloc inneraxes($S)
+
+        @test Slices(parent(S), @inferred(slicedims(S))) === S
     end
 
     @testset "UnsafeArrays" begin
-        S = randS(al)
+        S = randS(V, al)
         Sv = uview(S)
         @test parent(Sv) isa UnsafeArray{eltype(parent(S)), ndims(parent(S))}
+        @test S == Sv
     end
 
     @testset "parentindices" begin
-        S = randS(al)
+        S = randS(V, al)
         @test all(zip(LinearIndices(S), CartesianIndices(S))) do (i, I)
-            parentindices(S, i) == parentindices(S, I) == parentindices(S, Tuple(I)) == parentindices(S, Tuple(I)...)
+            parentindices(S, i) == parentindices(S, I) == parentindices(S, Tuple(I)...)
         end
-        @test all(eachindex(S)) do I
-            view(parent(S), parentindices(S, I)...) == S[I]
-        end
-    end
-
-    @testset "functions" begin
-        A, S = randAS(al)
-        @test flatten(S) === A
-        @test flatview(S) === A
-        @test innersize(S) == size(first(S))
-        @test inneraxes(S) == axes(first(S))
-        @test_noalloc innersize($S)
-        @test_noalloc inneraxes($S)
     end
 end
 
-@testset "AxisArrays" begin
+@testset "non-standard indexing (AxisArrays)" begin
     A = AxisArrays.AxisArray(rand(2, 3), [:a, :b], [:x, :y, :z])
     S = Slices(A, static(true), static(false))
     @test S[:x] == A[:, :x]
-end
-
-@testset "CartesianIndex" begin
-    A = rand(2, 3, 4)
-    let
-        S = Slices(A, 1)
-        @assert ndims(S) == 2
-        @test S[CartesianIndex(1)] == S[1]
-        @test S[CartesianIndex(1,1)] == S[1]
-        @test S[CartesianIndex(2,1)] == S[2]
-    end
-    let
-        S = Slices(A, 1, 2)
-        @assert ndims(S) == 1
-        @test S[CartesianIndex(1)] == S[1]
-        @test S[CartesianIndex(2)] == S[2]
-    end
 end

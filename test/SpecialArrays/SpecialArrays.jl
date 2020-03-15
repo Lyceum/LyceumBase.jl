@@ -1,54 +1,43 @@
 module SpecialArraysTest
-using Test, Random
 
-import AxisArrays
+using Test
+using Random
+
+using AxisArrays: AxisArrays
 using UnsafeArrays
 using BenchmarkTools
 using StaticNumbers
 
-using LyceumBase.LyceumCore
-import ..LyceumBase: SpecialArrays
-using .SpecialArrays
-using .SpecialArrays: ncolons, check_nestedarray_parameters, _maybe_unsqueeze, NestedView
+using ..LyceumBase.LyceumCore
+using ..LyceumBase.TestUtils
+using ..LyceumBase.SpecialArrays
+using ..LyceumBase.SpecialArrays: _maybe_unsqueeze, parentindices, slicedims
 
-# TODO move
-macro test_inferred(ex)
-    ex = quote
-        $Test.@test (($Test.@inferred $ex); true)
-    end
-    esc(ex)
-end
 
-macro test_noalloc(ex)
-    ex = quote
-        local tmp = $BenchmarkTools.@benchmark $ex samples = 1 evals = 1
-        $Test.@test iszero(tmp.allocs)
-    end
-    esc(ex)
-end
+const DEFAULT_ELTYPE = Float64
 
-testdims(M::Integer, N::Integer = static(0)) = ntuple(i -> 2i, @stat(M + N))
 
-randA(T::Type, M::Integer, N::Integer = static(0)) = rand(T, testdims(M, A))
-randA(M::Integer, N::Integer = static(0)) = randA(Float64, M, N)
+nones(N::Integer) = ntuple(_ -> 1, Val(unstatic(N)))
 
-function randNA(T::Type, M::Integer, N::Integer = static(0))
-    dims = testdims(M, N)
-    M_dims, N_dims = SpecialArrays.split(dims, static(M))
-    nested = Array{Array{T, unstatic(M)}, unstatic(N)}(undef, N_dims...)
+testdims(L::Integer) = ntuple(i -> 2i, Val(unstatic(L)))
+
+randA(T::Type, L::Integer) = rand(T, testdims(L)...)
+randA(L::Integer) = randA(DEFAULT_ELTYPE, L)
+
+function randN(T::Type, innersz::Dims{M}, outersz::Dims{N}) where {M,N}
+    dims = testdims(M + N)
+    nested = Array{Array{T,M},N}(undef, outersz...)
     for i in eachindex(nested)
-        x = rand!(zeros(T, M_dims...))
-        nested[i] = x
+        # rand!(zeros(...)) because when M == 0 rand(()) fails
+        nested[i] = rand!(zeros(T, innersz...))
     end
-    flat = reshape(mapreduce(vec, vcat, nested), dims)
-    return nested, flat
+    return nested
 end
-randNA(M::Integer, N::Integer) = randNA(Float64, M, N)
+randAN(M::Integer, N::Integer) = randAN(DEFAULT_ELTYPE, M, N)
 
-randN(T::Type, M::Integer, N::Integer) = first(randNA(T, M, N))
-randN(M::Integer, N::Integer) = randN(Float64, M, N)
+randN(T::Type, M::Integer, N::Integer) = last(randAN(T, M, N))
+randN(M::Integer, N::Integer) = randN(DEFAULT_ELTYPE, M, N)
 
-nones(::Val{N}) where {N} = ntuple(_ -> 1, Val(N))
 
 #@testset "functions" begin
 #    include("functions.jl")
