@@ -6,6 +6,8 @@ using Base.MultiplicativeInverses: SignedMultiplicativeInverse
 using UnsafeArrays
 using Adapt
 using StaticNumbers
+using StaticArrays: SOneTo
+using ..MacroTools: @forward
 
 using ..LyceumBase.LyceumCore
 using Shapes
@@ -22,6 +24,9 @@ include("functions.jl")
 
 export Slices
 include("slices.jl")
+
+export Align
+include("align.jl")
 
 include("nestedarrays/util.jl")
 include("nestedarrays/nestedview.jl")

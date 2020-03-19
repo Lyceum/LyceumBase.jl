@@ -1,22 +1,15 @@
-const LTuple{L} = Tuple{Vararg{<:Any,L}}
-
 @inline ncolons(n::Integer) = ntuple(_ -> Colon(), n)
 
 @inline front(t::Tuple, m::Integer) = ntuple(i -> t[i], m)
-@inline front(t::LTuple{L}) where {L} = front(t, static(L - 1))
+@inline front(t::Tuple, ::StaticOrVal{M}) where {M} = ntuple(i -> t[i], Val(M))
+@inline front(t::LTuple{L}) where {L} = front(t, Val(L - 1))
 
-@inline function tail(t::LTuple{L}, n::Integer) where {L}
-    m = @stat static(L) - n
+@inline function tail(t::Tuple, n::Integer)
+    m = length(t) - n
     ntuple(i -> t[i + m], n)
 end
-@inline tail(t::LTuple{L}) where {L} = tail(t, static(L - 1))
-
-@inline function tuplesplit(t::LTuple{L}, m::Integer) where {L}
-    n = @stat static(L) - m
-    front(t, m), tail(t, n)
+@inline function tail(t::LTuple{L}, ::StaticOrVal{N}) where {L,N}
+    M = L - N
+    ntuple(i -> t[i + M], Val(N))
 end
-
-# TODO needed or use StaticArrays?
-@pure _tuple_length(T::Type{<:Tuple}) = length(T.parameters)
-@pure _tuple_length(T::Tuple) = length(typeof(T))
-tuple_length(T::Tuple) = _tuple_length(T)
+@inline tail(t::LTuple{L}) where {L} = tail(t, Val(L - 1))

@@ -9,10 +9,11 @@ using BenchmarkTools
 using StaticNumbers
 
 using ..LyceumBase.LyceumCore
-using ..LyceumBase.TestUtils
 using ..LyceumBase.SpecialArrays
-using ..LyceumBase.SpecialArrays: _maybe_unsqueeze, parentindices, slicedims
+using ..LyceumBase.SpecialArrays: _maybe_unsqueeze
+using ..LyceumBase.TestUtil: @test_inferred, @test_noalloc
 
+include("testutil.jl")
 
 const DEFAULT_ELTYPE = Float64
 

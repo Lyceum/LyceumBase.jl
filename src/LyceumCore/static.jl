@@ -1,56 +1,65 @@
-wrapval(x) = Val(x)
-@pure wrapval(v::Val) = v
-unwrapval(x) = x
-@pure unwrapval(::Val{x}) where {x} = x
+const SBool = StaticBool
+const STrue = typeof(static(true))
+const SFalse = typeof(static(false))
+
+const StaticOrVal{X} = Union{StaticInteger{X}, StaticReal{X}, StaticNumber{X}, Val{X}}
+
+wrapval(::StaticOrVal{X}) where {X} = Val(X)
+wrapval(::Type{<:StaticOrVal{X}}) where {X} = Val(X)
+@pure wrapval(x) = Val(x)
+
+wrapstatic(::StaticOrVal{X}) where {X} = static(X)
+wrapstatic(::Type{<:StaticOrVal{X}}) where {X} = static(X)
+@pure wrapstatic(x) = static(x)
+
+unwrap(::StaticOrVal{X}) where {X} = X
+unwrap(::Type{<:StaticOrVal{X}}) where {X} = X
+unwrap(x) = x
 
 
-const StaticTrue = typeof(static(true))
-const StaticFalse = typeof(static(false))
+static_not(::SFalse) = static(true)
+static_not(::STrue) = static(false)
 
-const StaticOr = Union{StaticInteger, StaticNumber, StaticReal, Int, Float64, Bool}
+static_and(::STrue, ::STrue) = static(true)
+static_and(::SBool, ::SBool) = static(false)
 
-static_not(::StaticTrue) = static(false)
-static_not(::StaticFalse) = static(true)
+static_or(::SBool, ::STrue) = static(true)
+static_or(::STrue, ::SBool) = static(true)
+static_or(::SBool, ::SBool) = static(false)
 
 
-@inline static_in(x::StaticOr, itr::Tuple{Vararg{StaticOr}}) = _static_in(x, itr)
+#static_sum(xs::StaticInteger...) = static_sum(xs)
+#static_sum(xs::TupleN{StaticInteger}) = static_sum
+#@generated function static_sum(xs::NTuple{N,StaticInteger}) where {N}
+#    s = static(0)
+#    for i = 1:N
+#        s =
+#    end
+#    return s
+#end
+#function StaticNumbers.maybe_static(::typeof(static_sum), xs::TupleN{StaticInteger})
+#    static(static_sum(xs))
+#end
 
-@pure function _static_in(x::StaticOr, itr::Tuple{Vararg{StaticOr}})
+static_in(x::StaticOrInt, itr::TupleN{StaticOrInt}) = _static_in(x, itr)
+@pure function _static_in(x::StaticOrInt, itr::TupleN{StaticOrInt})
     for y in itr
-        y == x && return static(true)
+        unwrap(y) === unwrap(x) && return static(true)
     end
     return static(false)
 end
 
-@pure function _static_in(x::T, itr::Tuple{Vararg{T}}) where {T<:StaticOr}
-    for y in itr
-        y === x && return static(true)
-    end
-    return static(false)
-end
-
-@pure function static_findfirst(x::StaticOr, itr::NTuple{N,StaticOr}) where {N}
-    for i = 1:N
-        x == itr[i] && return static(i)
-    end
-    return nothing
-end
-
-
-
-@inline static_sum(xs::Tuple{Vararg{StaticInteger}}) = _static_sum(xs)
-@inline static_sum(xs::StaticInteger...) = _static_sum(xs)
-@pure function _static_sum(xs::Tuple{Vararg{StaticInteger}})
-    s = 0
-    for x in xs
-        s += x
-    end
-    return static(s)
-end
-
-@inline function static_filter(flags::NTuple{N,StaticBool}, xs::Tuple{Vararg{Any,N}}) where {N}
-    (static_filter1(first(flags), first(xs))..., static_filter(tail(flags), tail(xs))...)
+@inline function static_filter(by::NTuple{N,SBool}, xs::NTuple{N,Any}) where {N}
+    (_filter1(first(by), first(xs))..., static_filter(tail(by), tail(xs))...)
 end
 static_filter(::Tuple{}, ::Tuple{}) = ()
-@inline static_filter1(::StaticTrue, x) = (x, )
-@inline static_filter1(::StaticFalse, ::Any) = ()
+@inline _filter1(::STrue, x) = (x, )
+@inline _filter1(::SFalse, x) = ()
+
+function static_merge(by::TupleN{SBool}, x::Tuple, y::Tuple)
+    val, x2, y2 = _merge1(first(by), x, y)
+    (val, static_merge(tail(by), x2, y2)..., )
+end
+static_merge(::Tuple{}, ::Tuple{}, ::Tuple{}) = ()
+@inline _merge1(::STrue, x::Tuple, y::Tuple) = (first(x), tail(x), y)
+@inline _merge1(::SFalse, x::Tuple, y::Tuple) = (first(y), x, tail(y))
