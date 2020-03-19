@@ -1,18 +1,34 @@
-# For AbstractArray A and indices I, compute typeof(view(A, I...)) by:
-# 1) First trying to infer T from typeof(A) and typeof(I). This avoids indexing into
-#   A, which is faster and allows for 0-length axes
-# 2) If that fails, return typeof(view(A, I...))
+# For AbstractArray A and indices I, compute V = typeof(view(A, I...)) by:
+# 1) Try to infer V from typeof(A) and typeof(I) by calling viewtype(typeof(A), typeof(I))
+# 2) If !isconcretetype(V), fall back to typeof(view(A, I...))
+# Custom subtypes of AbstractArray (e.g. UnsafeArray) could provide customized implementations
+# of viewtype(A::AbstractArray, I::Tuple) or viewtype(::Type{<:AbstractArray}, ::Type{<:Tuple})
+# if required.
 
-@propagate_inbounds viewtype(A::AbsArr, I...) = viewtype(A, I)
-@propagate_inbounds function viewtype(A::AbsArr, I::Tuple)
-    T = viewtype(typeof(A), typeof(I))
-    _viewtype(A, I, T, Val(isconcretetype(T)))
+@inline viewtype(A::AbstractArray, I::Tuple) = _viewtype(A, I)
+@inline viewtype(A::AbstractArray, I...) = _viewtype(A, I)
+
+@generated function _viewtype(A::AA, I::II) where {AA<:AbstractArray,II<:Tuple}
+    T = Core.Compiler.return_type(view, Tuple{AA, II.parameters...})
+    if isconcretetype(T)
+        return :(Base.@_inline_meta; $T)
+    else
+        return :(Base.@_inline_meta; __viewtype(A, I))
+    end
 end
 
-@inline function viewtype(::Type{A}, ::Type{I}) where {A<:AbsArr,I<:Tuple}
-    Core.Compiler.return_type(view, _view_signature(A, I))
+@inline function __viewtype(A::AbstractArray, I::Tuple)
+    try
+        typeof(@inbounds view(A, I...))
+    catch e
+        Istring = join(map(string, I), ", ")
+        printstyled(stderr,
+        """
+        Unable to infer typeof(view($(typeof(A)), $(join(map(i -> string(typeof(i)), I), ", "))))
+        Only other option is to try typeof(view(A, $Istring)) but that resulted in below error.
+        Try passing in valid indices or implement:
+            viewtype(::Type{$(typeof(A))}, ::Type{$(typeof(I))})
+        """, color=:light_red)
+        rethrow(e)
+    end
 end
-@pure _view_signature(::Type{A}, ::Type{I}) where {A,I<:Tuple} = Tuple{A, I.parameters...}
-
-_viewtype(A, I, T, ::Val{true}) = T
-@propagate_inbounds _viewtype(A, I, T, ::Val{false}) = typeof(view(A, I...))

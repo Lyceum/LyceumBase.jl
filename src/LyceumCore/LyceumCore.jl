@@ -8,7 +8,8 @@ using ..BenchmarkTools
 const Maybe{T} = Union{T,Nothing}
 
 const TupleN{T,N} = NTuple{N,T}
-const VarargN{N,T} = Vararg{T,N}
+const LTuple{L} = NTuple{L,Any}
+const NVararg{N,T} = Vararg{T,N}
 
 const AbsArr{T,N} = AbstractArray{T,N}
 const AbsMat{T} = AbstractMatrix{T}
@@ -23,20 +24,18 @@ const AbsSimilarNestedArr{V,M,N} = AbstractArray{<:AbstractArray{V,M},N}
 
 
 export Maybe
-export TupleN, VargargN
+export TupleN, LTuple, NVararg
 export AbsArr, AbsMat, AbsVec
 export RealArr, RealMat, RealVec
 export AbsNestedArr, AbsSimilarNestedArr
 
-export wrapval, unwrapval
-export StaticTrue, StaticFalse, StaticOr
-export static_not, static_in, static_sum, static_filter
+export StaticOrVal, SBool, STrue, SFalse
+export wrapval, wrapstatic, unwrap
+export static_not, static_and, static_or
+export static_filter, static_merge, static_in, static_sum
 include("static.jl")
 
-export ncolons, front, tail, tuplesplit, tuple_length
+export ncolons, front, tail
 include("util.jl")
-
-export @test_inferred, @test_noalloc
-include("testutil.jl")
 
 end

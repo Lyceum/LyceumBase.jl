@@ -1,4 +1,4 @@
-module TestUtils
+module TestUtil
 
 using Test: Test, @testset, @test, @inferred
 

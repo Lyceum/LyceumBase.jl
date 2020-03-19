@@ -8,6 +8,7 @@ using BenchmarkTools: BenchmarkTools
 using DocStringExtensions
 using Reexport
 using StaticNumbers
+using MacroTools
 
 
 include("LyceumCore/LyceumCore.jl")
@@ -54,8 +55,8 @@ include("abstractenvironment.jl")
 #### Submodules
 ####
 
-include("TestUtils/TestUtils.jl")
-using .TestUtils
+include("TestUtil/TestUtil.jl")
+using .TestUtil
 
 export SpecialArrays
 include("SpecialArrays/SpecialArrays.jl")

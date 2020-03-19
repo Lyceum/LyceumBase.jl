@@ -43,7 +43,7 @@ function inneraxes(A::AbsNestedArr)
         ax = ntuple(_ -> Base.OneTo(0), Val(M))
     else
         ax = axes(first(A))
-        length(ax) == M || throw(DimensionMismatch("inner axes do not match inner ndims"))
+        length(ax) == M || throw(DimensionMismatch("length(inneraxes(A)) != innerndims(A)"))
         for a in A
             if axes(a) != ax
                 throw(DimensionMismatch("The elements of A do not have equal axes"))
@@ -62,27 +62,12 @@ end
     innersize(A::AbstractArray{<:AbstractArray}[, d])
 
 Returns the size of the element arrays of `A`.
-Throws an error if the elements of `A` do not have equal size.
+Throws an error if the elements of `A` do not have equal axes.
 """
 function innersize end
 
-function innersize(A::AbsNestedArr)
-    M = innerndims(A)
-    if isempty(A)
-        sz = ntuple(_ -> 0, Val(M))
-    else
-        sz = size(first(A))
-        length(sz) == M || throw(DimensionMismatch("inner size does not match inner ndims"))
-        for a in A
-            if size(a) != sz
-                throw(DimensionMismatch("The elements of A do not have equal size"))
-            end
-        end
-    end
-    return sz
-end
-
-@inline innersize(A::AbsNestedArr, d::Integer) = d <= innerndims(A) ? innersize(A)[d] : 1
+@inline innersize(A::AbsNestedArr) = map(length, inneraxes(A))
+@inline innersize(A::AbsNestedArr, d::Integer) = length(inneraxes(A, d))
 
 
 """
@@ -172,7 +157,7 @@ function flatview end
 
 flatview(A::AbsArr) = A
 # TODO: Lazy flatview?
-flatview(A::AbsSimilarNestedArr) = flatten(A)
+flatview(A::AbsNestedArr) = flatten(A)
 
 
 
