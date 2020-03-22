@@ -21,7 +21,6 @@ function randlike!(A::AbsArr{<:Number})
     return A
 end
 
-
 function test_indices(A::AbsArr, B::Array, Is::AbsArr{<:Tuple})
     I1 = first(Is)
 
@@ -43,6 +42,8 @@ function test_indices(A::AbsArr, B::Array, Is::AbsArr{<:Tuple})
         A[I...] == B[I...] && compare_type_and_shape(A, B, I...)
     end
 end
+
+
 
 function test_indices(A::AbsArr, B::Array, Is::AbsArr)
     I1 = first(Is)

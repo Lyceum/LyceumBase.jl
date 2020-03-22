@@ -18,6 +18,12 @@ git-tree-sha1 = "68a90a692ddc0eb72d69a6993ca26e2a923bf195"
 uuid = "68821587-b530-5797-8361-c406ea357684"
 version = "3.5.0+2"
 
+[[AxisArrays]]
+deps = ["Dates", "IntervalSets", "IterTools", "RangeArrays"]
+git-tree-sha1 = "04f979dd266c708f478334e0a85785eab0558740"
+uuid = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
+version = "0.4.2"
+
 [[BSON]]
 git-tree-sha1 = "e794bd8f3f319218e8c8b46657631bdbea2807ca"
 uuid = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -58,9 +64,9 @@ version = "3.8.0"
 
 [[CompilerSupportLibraries_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "b57c5d019367c90f234a7bc7e24ff0a84971da5d"
+git-tree-sha1 = "aa832564f930a7fc9290972526908d01a35aefac"
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "0.2.0+1"
+version = "0.3.0+0"
 
 [[ConstructionBase]]
 git-tree-sha1 = "a2a6a5fea4d6f730ec4c18a76d27ec10e8ec1c50"
@@ -152,6 +158,17 @@ version = "0.2.2"
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
+[[IntervalSets]]
+deps = ["Dates", "EllipsisNotation", "Statistics"]
+git-tree-sha1 = "8a83c4788fdc2e32d08d90214834ec2dc1a54f57"
+uuid = "8197267c-284f-5f27-9208-e0e47529a953"
+version = "0.4.0"
+
+[[IterTools]]
+git-tree-sha1 = "05110a2ab1fc5f932622ffea2a003221f4782c18"
+uuid = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
+version = "1.3.0"
+
 [[IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
@@ -221,9 +238,9 @@ version = "0.7.1"
 
 [[OpenBLAS_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "858f107d79a016d9511e34186fe2af11566ba762"
+git-tree-sha1 = "139adbff69e8149e68824994b68f06a61a5a2797"
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.7+7"
+version = "0.3.7+8"
 
 [[OpenSpecFun_jll]]
 deps = ["CompilerSupportLibraries_jll", "Libdl", "Pkg"]
@@ -239,9 +256,9 @@ version = "1.1.0"
 
 [[PDMats]]
 deps = ["Arpack", "LinearAlgebra", "SparseArrays", "SuiteSparse", "Test"]
-git-tree-sha1 = "5f303510529486bb02ac4d70da8295da38302194"
+git-tree-sha1 = "2fc6f50ddd959e462f0a2dbc802ddf2a539c6e35"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
-version = "0.9.11"
+version = "0.9.12"
 
 [[Parameters]]
 deps = ["OrderedCollections"]
@@ -281,6 +298,11 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 [[Random]]
 deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[[RangeArrays]]
+git-tree-sha1 = "b9039e93773ddcfc828f12aadf7115b4b4d225f5"
+uuid = "b3c3ace0-ae52-54e7-9d0b-2c1406fd6b9d"
+version = "0.3.2"
 
 [[Reexport]]
 deps = ["Pkg"]
