@@ -27,19 +27,7 @@ static_or(::SBool, ::STrue) = static(true)
 static_or(::STrue, ::SBool) = static(true)
 static_or(::SBool, ::SBool) = static(false)
 
-
-#static_sum(xs::StaticInteger...) = static_sum(xs)
-#static_sum(xs::TupleN{StaticInteger}) = static_sum
-#@generated function static_sum(xs::NTuple{N,StaticInteger}) where {N}
-#    s = static(0)
-#    for i = 1:N
-#        s =
-#    end
-#    return s
-#end
-#function StaticNumbers.maybe_static(::typeof(static_sum), xs::TupleN{StaticInteger})
-#    static(static_sum(xs))
-#end
+export static_sum
 
 static_in(x::StaticOrInt, itr::TupleN{StaticOrInt}) = _static_in(x, itr)
 @pure function _static_in(x::StaticOrInt, itr::TupleN{StaticOrInt})
@@ -49,17 +37,21 @@ static_in(x::StaticOrInt, itr::TupleN{StaticOrInt}) = _static_in(x, itr)
     return static(false)
 end
 
-@inline function static_filter(by::NTuple{N,SBool}, xs::NTuple{N,Any}) where {N}
-    (_filter1(first(by), first(xs))..., static_filter(tail(by), tail(xs))...)
+@pure function static_filter(which::SBool, by::NTuple{N,SBool}, xs::NTuple{N,Any}) where {N}
+    _static_filter(which, by, xs)
 end
-static_filter(::Tuple{}, ::Tuple{}) = ()
-@inline _filter1(::STrue, x) = (x, )
-@inline _filter1(::SFalse, x) = ()
+@inline function _static_filter(which::SBool, by::NTuple{N,SBool}, xs::NTuple{N,Any}) where {N}
+    (_filter1(which, first(by), first(xs))..., _static_filter(which, tail(by), tail(xs))...)
+end
+_static_filter(::SBool, ::Tuple{}, ::Tuple{}) = ()
+@inline _filter1(::T, ::T, x) where {T} = (x, )
+@inline _filter1(::T, ::V, x) where {T,V} = ()
 
-function static_merge(by::TupleN{SBool}, x::Tuple, y::Tuple)
-    val, x2, y2 = _merge1(first(by), x, y)
-    (val, static_merge(tail(by), x2, y2)..., )
+@generated function static_merge(::Bys, x::X, y::Y) where {Bys<:TupleN{SBool}, X<:Tuple, Y<:Tuple}
+    i = j = 0
+    xy = Tuple(By === STrue ? :(x[$(i+=1)]) : :(y[$(j+=1)]) for By in Bys.parameters)
+    quote
+        Base.@_inline_meta
+        $(Expr(:tuple, xy...))
+    end
 end
-static_merge(::Tuple{}, ::Tuple{}, ::Tuple{}) = ()
-@inline _merge1(::STrue, x::Tuple, y::Tuple) = (first(x), tail(x), y)
-@inline _merge1(::SFalse, x::Tuple, y::Tuple) = (first(y), x, tail(y))

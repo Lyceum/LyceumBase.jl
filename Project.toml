@@ -5,6 +5,7 @@ version = "0.3.0-DEV"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

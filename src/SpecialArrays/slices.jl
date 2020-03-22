@@ -7,32 +7,20 @@ struct Slices{T,N,M,P<:AbsArr,A} <: AbstractArray{T,N}
     end
 end
 
-#alongs(::Type{<:Slices{<:Any,<:Any,<:Any,<:Any,A}}) where {A} = A
-#alongs(S::Slices) = alongs(typeof(S))
-
-@generated function check_slices_parameters(::Type{T}, ::Val{N}, ::Val{M}, ::Type{P}, ::Type{A}) where {T,N,M,P,A}
-    if !(N isa Int && M isa Int)
-        return :(throw(ArgumentError("Slices paramters N and M must be of type Int")))
-    elseif !(A <: NTuple{M+N,SBool})
-        return :(throw(ArgumentError("Slices parameter A should be a NTuple{M+N,$SBool}")))
-    elseif N < 0 || M < 0 || ndims(P) != N + M || sum(map(unwrap, A.parameters)) != M
-        return :(throw(ArgumentError("Dimension mismatch in Slices parameters"))) # got N=$N, M=$M, ndims(P)=$(ndims(P)), and sum(A)=$(sum(A))")))
-    else
-        return nothing
-    end
-    error("Internal error. Please file a bug")
-end
-
-function Slices(parent::AbsArr{<:Any,L}, alongs::NTuple{L,SBool}) where {L}
-    M = sum(map(unstatic, alongs))
-    N = L - M
-    parentaxes = axes(parent)
-    I = ntuple(i -> (Base.@_inline_meta; _slice_or_firstindex(alongs[i], parentaxes[i])), Val(L))
-    T = viewtype(parent, I)
+@inline function Slices(parent::AbsArr{<:Any,L}, alongs::NTuple{L,SBool}, inaxes::NTuple{M,Any}, outaxes::NTuple{N,Any}) where {L,M,N}
+    ax = axes(parent)
+    I = ntuple(i -> first(outaxes[i]), Val(N))
+    J = static_merge(alongs, ntuple(i -> Base.Slice(inaxes[i]), Val(M)), I)
+    T = viewtype(parent, J...)
     Slices{T,N,M,typeof(parent),typeof(alongs)}(parent, alongs)
 end
-@pure _slice_or_firstindex(::STrue, ax) = Colon()
-@inline _slice_or_firstindex(::SFalse, ax) = first(ax)
+
+@inline function Slices(parent::AbsArr{<:Any,L}, alongs::NTuple{L,SBool}) where {L}
+    paxes = axes(parent)
+    inaxes = static_filter(STrue(), alongs, paxes)
+    outaxes = static_filter(SFalse(), alongs, paxes)
+    Slices(parent, alongs, inaxes, outaxes)
+end
 
 function Slices(parent::AbsArr, alongs::TupleN{SBool})
     throw(ArgumentError("length(alongs) != ndims(parent)"))
@@ -48,7 +36,7 @@ end
 
 @inline function Slices(parent::AbsArr{<:Any,L}, alongs::Vararg{StaticOrInt}) where {L}
     Slices(parent, alongs)
-end
+end#
 
 
 ####
@@ -58,204 +46,78 @@ end
 # TODO
 Base.parent(S::Slices) = error("Base.parent")
 
-static_map(f, xs::NTuple{N,StaticOrVal}) where {N} = ntuple(i -> f(xs[i]), Val(N))
+@inline Base.axes(S::Slices) = static_filter(SFalse(), S.alongs, axes(S.parent))
+@inline Base.size(S::Slices) = static_filter(SFalse(), S.alongs, size(S.parent))
 
-@inline function Base.size(S::Slices{<:Any,N}) where {N}
-    #static_filter(ntuple(i -> static_not(S.alongs[i]), Val(L)), size(S.parent))
-    static_filter(static_map(static_not, S.alongs), size(S.parent))
+@inline inneraxes(S::Slices) = static_filter(STrue(), S.alongs, axes(S.parent))
+@inline innersize(S::Slices) = static_filter(STrue(), S.alongs, size(S.parent))
+
+@pure function parentindices(S::Slices{<:Any,N,M}, I::NTuple{N,Any}) where {N,M}
+    inaxes = inneraxes(S)
+    slices = ntuple(i -> (Base.@_inline_meta; Base.Slice(inaxes[i])), Val(M))
+    static_merge(S.alongs, slices, I)
 end
 
-#_maybe_reshape(A::AbstractArray, ::NTuple{1, Bool}) = reshape(A, Val(1))
-#_maybe_reshape(A::AbstractArray{<:Any,1}, ::NTuple{1, Bool}) = reshape(A, Val(1))
-#_maybe_reshape(A::AbstractArray{<:Any,N}, ::NTuple{N, Bool}) where {N} = A
-#_maybe_reshape(A::AbstractArray, ::NTuple{N, Bool}) where {N} = reshape(A, Val(N))
-#
-#Idx = Union{Colon, Real, AbstractArray}
-
-# cases
-# 1. N == ndims(I)
-# 2. N > ndims(I)
-# 3. N < ndims(I)
-
-#function Base.getindex(S::Slices{<:Any,N}, I::Vararg{Idx,N}) where {N}
-
+# standard cartesian indexing
 @propagate_inbounds function Base.getindex(S::Slices{<:Any,N}, I::Vararg{Int,N}) where {N}
-    J = _parentindices(S, I)
+    J = parentindices(S, I)
     view(S.parent, J...)
 end
-
 @propagate_inbounds function Base.setindex!(S::Slices{<:Any,N}, v, I::Vararg{Int,N}) where {N}
-    J = _parentindices(S, I)
+    J = parentindices(S, I)
     setindex!(S.parent, v, J...)
     return S
 end
 
-function _parentindices(S::Slices{<:Any,N,M}, I::NTuple{N,Any}) where {N,M}
-    static_merge(S.alongs, ntuple(_ -> Colon(), Val(M)), I)
+
+# for I::Vararg{SliceIdx}, we might be able to just forward the indices to the parent array
+const SliceIdx = Union{Colon, Real, AbstractArray}
+
+#@propagate_inbounds function Base.getindex(S::Slices, I::SliceIdx...)
+@propagate_inbounds function Base.getindex(S::Slices{<:Any,N}, I::Vararg{SliceIdx,N}) where {N}
+    _getindex(_maybe_reshape(S, Base.index_ndims(I...)), I)
 end
 
-#@propagate_inbounds function Base.getindex(S::Slices, I::Idx...)
-#    _getindex(_maybe_reshape(S, Base.index_ndims(I...)), I...)
-#end
+_maybe_reshape(A::AbstractArray, ::NTuple{1, Bool}) = reshape(A, Val(1))
+_maybe_reshape(A::AbstractArray{<:Any,1}, ::NTuple{1, Bool}) = reshape(A, Val(1))
+_maybe_reshape(A::AbstractArray{<:Any,N}, ::NTuple{N, Bool}) where {N} = A
+_maybe_reshape(A::AbstractArray, ::NTuple{N, Bool}) where {N} = reshape(A, Val(N))
 
-#@propagate_inbounds _getindex(S::Slices, I...) = getindex(Indexer(S), I...)
-#
-#function _getindex(S::Slices{<:Any,N}, I::Vararg{Idx,N}) where {N}
-#    J = _parentindices(S, I...)
-#    return J
-#    al = reslice(S.alongs, I)
-#    al = map(unstatic, al)
-#    println("old: $(sum(S.alongs)) $(length(S.alongs))")
-#    println("new: $(sum(al)) $(length(al))")
-#end
+@propagate_inbounds function _getindex(S::Slices{<:Any,N}, I::NTuple{N,SliceIdx}) where {N}
+    # If ndims(S) == length(I) after reshaping, we can forward the indices to the
+    # parent array and drop the corresponding values in S.alongs.
+    J = parentindices(S, I)
+    _maybe_reslice(S, J, reslice(S.alongs, J))
+end
 
-#ScalarIndex = Union{Real, AbstractArray{<:Any, 0}}
-#ScalarIndex = Real
+function _maybe_reslice(S::Slices, J, newalongs::Tuple)
+    Slices(view(S.parent, J...), newalongs)
+end
+function _maybe_reslice(S::Slices{<:Any,<:Any,M}, J, ::NTuple{M,SBool}) where {M}
+    view(S.parent, J...)
+end
 
+# add/drop non-sliced dimensions (i.e. alongs[dim] == SFalse()) to match J
+@inline function reslice(alongs::NTuple{L,SBool}, J::NTuple{L,Any}) where {L}
+    (_reslice1(first(alongs), first(J))..., reslice(tail(alongs), tail(J))...)
+end
+reslice(::Tuple{}, ::Tuple{}) = ()
+@inline _reslice1(::STrue, ::Any) = (static(true), ) # keep inner dimension
+@inline _reslice1(::SFalse, j::Any) = _reslicefalse(j)
+@inline _reslicefalse(::Real) = () # drop this dimension
+@inline _reslicefalse(::Colon) = (static(false), ) # keep this dimension
+@inline function _reslicefalse(::AbstractArray{<:Any,N}) where {N}
+    ntuple(_ -> static(false), Val(N))
+end
 
-#function reslice(alongs::Tuple{STrue, Vararg{Any}}, I::Tuple)
-#    (static(true), reslice(tail(alongs), I)...)
-#end
-#function reslice(alongs::Tuple{SFalse, Vararg{Any}}, I::Tuple)
-#    (_reslice_false(first(I))..., reslice(tail(alongs), tail(I))...)
-#end
-#function reslice(alongs::Tuple{SFalse, Vararg{Any}}, I::Tuple{})
-#    ()
-#end
-#reslice(::Tuple{}, ::Tuple{}) = ()
-#
-## drop trailing
-#reslice(::Tuple, ::Tuple{}) = ()
-## add trailing
-#reslice(::Tuple{}, I::Tuple) = _reslice_trailing(I...)
-#_reslice_trailing(::ScalarIndex, I...) = _reslice_trailing(I...)
-#_reslice_trailing(::Colon, I...) = (static(false), _reslice_trailing(I...)...)
-#function _reslice_trailing(::AbstractArray{N}, I...) where {N}
-#    (ntuple(_ -> static(false), Val(N))..., _reslice_trailing(I...)...)
-#end
-#_reslice_trailing() = ()
-#
-#_reslice_false(::ScalarIndex) = () # drop this dimension
-#_reslice_false(::Colon) = (static(false), ) # keep this dimension
-#function _reslice_false(::AbstractArray{<:Any,N}) where {N}
-#    ntuple(_ -> static(false), Val(N))
-#end
+# Fall back to Cartesian indexing if:
+#   1) ndims(I) != length(I)
+#   2) _maybe_reshape returned did not return a Slices
+@propagate_inbounds _getindex(S::Slices, I) = getindex(Indexer(A), I...)
+@propagate_inbounds _getindex(A::AbstractArray, I) = getindex(Indexer(A), I...)
 
-#function _reslice(alongs::NTuple{N,SBool}, J::NTuple{N,Any}) where {N}
-#    __reslice(Base.indefirst(J), first(alongs), tail(J), tail(alongs))
-#end
-#__reslice(
-#_reslice(::Tuple{}, ::Tuple{}) = ()
-#_reslice(::NTuple{N,Any}, ::Tuple{}) where {N} = ntuple(_ -> static(false), Val(N))
-#
-#@inline _reslice_one(J, alongs::SBool) = __reslice_one(Base.index_dimsum(J), alongs)
-#__reslice_one(::Tuple{}, ::SFalse) = ()
-#__reslice_one(::NTuple{1,Bool}, ::SFalse) = (static(false), )
-#__reslice_one(::NTuple{1,Bool}, ::STrue) = (static(true), )
+Base.IndexStyle(::Type{<:Slices}) = IndexCartesian()
 
-#
-## Now we can reaxis without worrying about mismatched axes/indices
-#@inline _reaxis(axs::Tuple{}, idxs::Tuple{}) = ()
-## Scalars are dropped
-#@inline _reaxis(axs::Tuple, idxs::Tuple{ScalarIndex, Vararg{Any}}) = _reaxis(tail(axs), tail(idxs))
-## Colon passes straight through
-#@inline _reaxis(axs::Tuple, idxs::Tuple{Colon, Vararg{Any}}) = (axs[1], _reaxis(tail(axs), tail(idxs))...)
-## But arrays can add or change dimensions and accompanying axis names
-#@inline _reaxis(axs::Tuple, idxs::Tuple{AbstractArray, Vararg{Any}}) =
-#    (_new_axes(axs[1], idxs[1])..., _reaxis(tail(axs), tail(idxs))...)
-
-#reaxis(A::AxisArray, I::Idx...) = _reaxis(make_axes_match(axes(A), I), I)
-## Linear indexing
-#reaxis(A::AxisArray{<:Any,1}, I::AbstractArray{Int}) = _new_axes(A.axes[1], I)
-#reaxis(A::AxisArray, I::AbstractArray{Int}) = default_axes(I)
-#reaxis(A::AxisArray{<:Any,1}, I::Real) = ()
-#reaxis(A::AxisArray, I::Real) = ()
-#reaxis(A::AxisArray{<:Any,1}, I::Colon) = _new_axes(A.axes[1], Base.axes(A, 1))
-#reaxis(A::AxisArray, I::Colon) = default_axes(Base.OneTo(length(A)))
-#reaxis(A::AxisArray{<:Any,1}, I::AbstractArray{Bool}) = _new_axes(A.axes[1], findall(I))
-#reaxis(A::AxisArray, I::AbstractArray{Bool}) = default_axes(findall(I))
-#
-## Ensure the number of axes matches the number of indexing dimensions
-#@inline function make_axes_match(axs, idxs)
-#    nidxs = Base.index_ndims(idxs...)
-#    ntuple(i->(Base.@_inline_meta; _default_axis(i > length(axs) ? Base.OneTo(1) : axs[i], i)), length(nidxs))
-#end
-#
-
-#@inline function _getindex(l::IndexStyle, A::AbstractArray, I::Union{Real, AbstractArray}...)
-#    @info "here"
-#    @boundscheck checkbounds(A, I...)
-#    return _unsafe_getindex(l, Base._maybe_reshape(l, A, I...), I...)
-#end
-#
-#function _unsafe_getindex(::IndexStyle, A::AbstractArray, I::Vararg{Union{Real, AbstractArray}, N}) where N
-#    @info "there" typeof(A) size(A) length(I)
-#    # This is specifically not inlined to prevent excessive allocations in type unstable code
-#    shape = Base.index_shape(I...)
-#    dest = similar(A, shape)
-#    map(Base.unsafe_length, axes(dest)) == map(Base.unsafe_length, shape) || Base.throw_checksize_error(dest, shape)
-#    @info size(dest) typeof(dest)
-#    #Base._unsafe_getindex!(dest, A, I...) # usually a generated function, don't allow it to impact inference result
-#    return dest
-#
-#    # This is specifically not inlined to prevent excessive allocations in type unstable code
-#    #shape = Base.index_shape(I...)
-#    #dest = similar(A, shape)
-#    #map(Base.unsafe_length, axes(dest)) == map(Base.unsafe_length, shape) || Base.throw_checksize_error(dest, shape)
-#    #_unsafe_getindex!(dest, A, I...) # usually a generated function, don't allow it to impact inference result
-#    #dest, I
-#    #return dest
-#end
-#
-## a single element
-#@propagate_inbounds function _getindex(S::Slices{<:Any,N}, J::NTuple{N,Any}, ::Tuple{}) where {N}
-#    view(S.parent, J...)
-#end
-#
-#@propagate_inbounds function _getindex(S::Slices{<:Any,N}, J::NTuple{N,Any}, ::Tuple) where {N}
-#    Slice(view(S.parent, I...), _reslice(S.alongs, J))
-#end
-#
-#@inline index_dimsum(i1, I...) = (index_dimsum(I...)...,)
-#@inline index_dimsum(::Colon, I...) = (true, index_dimsum(I...)...)
-#@inline index_dimsum(::AbstractArray{Bool}, I...) = (true, index_dimsum(I...)...)
-#
-#
-#
-#
-#
-#@propagate_inbounds function Base.setindex!(S::Slices{<:Any,N}, v, I::Vararg{Any,N}) where {N}
-#    J = parentindices(S, I...)
-#    IDims = Base.index_dimsum(I...)
-#    #@info "IJ" I J size(parent(S)) size(v) size(first(v)) size(view(S.parent, J...))
-#    _setindex!(S, v, I, J, IDims)
-#end
-#@propagate_inbounds function _setindex!(S::Slices, v, I, J::Tuple, ::NTuple{0,Bool})
-#    setindex!(parent(S), v, J...)
-#end
-#@propagate_inbounds function _setindex!(S::Slices, v, I, J::Tuple, ::NTuple{N,Bool}) where {N}
-#    #@info "IJ" I J size(parent(S)) size(v)
-#    S2 = getindex(S, I...)
-#    setindex!(S2, v, I...)
-#    S
-#    #Slices(view(parent(S), J...), _reslice(J, S.alongs))
-#end
-##@propagate_inbounds function _getindex(S::Slices{<:Any,N}, J::Tuple, ::NTuple{N,Bool}) where {N}
-##    Slices(view(parent(S), J...), S.alongs)
-##end
-#
-##@propagate_inbounds function _setindex!(S::Slices, v, I...)
-##    setindex!(parent(S), _maybe_unsqueeze(S, v), parentindices(S, I...)...)
-##    return S
-##end
-##@propagate_inbounds _setindex!(S::Slices, v, ::Colon) = (copyto!(S, v); S)
-
-#
-#
-#
-## TODO support IndexLinear()?
-#Base.IndexStyle(::Type{<:Slices}) = IndexCartesian()
-#
 ## TODO always shove inner dims to front?
 #function Base.similar(S::Slices{<:Any,<:Any,M1}, ::Type{<:AbsArr{V,M2}}, dims::Dims) where {M1,V,M2}
 #    M1 == M2 || throw(ArgumentError("ndims(T) must equal ndims(S) or unspecified"))
@@ -276,30 +138,19 @@ end
 #
 #@inline Base.axes(S::Slices) = static_filter(map(static_not, S.alongs), axes(parent(S)))
 
-
-#Base.reshape(S::Slices{<:Any,N}, ::Val{N}) where {N} = S
-#Base.reshape(S::Slices, ::Val{N}) where {N} = _reshape(S, Val(N))
-#@generated function _reshape(S::Slices{<:Any,N,M,<:Any,A}, ::Val{NewN}) where {N,M,A,NewN}
-#    L = N + M
-#    diff = NewN - N
-#    if NewN > N
-#        alongs = Tuple(a() for a in A.parameters)..., ntuple(_ -> static(false), NewN - N)...)
-#        I = Expr(:tuple)
-#        quote
-#            @_inline_meta
-#            parent = reshape(S.parent, Val($(M + NewN)))
-#            #parentaxes = axes(parent)
-#            #T = viewtype(parent, $I...)
-#            #T = typeof(view(parent, $I...))
-#            #Slices{T,$NewN,$M,typeof(parent),$(typeof(alongs))}(parent, $alongs)
-#
-#            Slices(parent, $alongs)
-#            #slices(newparent, $newalongs, Val($NewN), Val($M))
-#        end
-#    else
-#        return :(@_inline_meta; reshape(S, Base.rdims(Val($NewN), axes(S))))
-#    end
-#end
+Base.reshape(S::Slices{<:Any,N}, ::Val{N}) where {N} = S
+@generated function Base.reshape(S::Slices{<:Any,N,M,<:Any,A}, ::Val{NewN}) where {N,M,A,NewN}
+    if NewN > N
+        newalongs = (Tuple(a() for a in A.parameters)..., ntuple(_ -> static(false), NewN - N)...)
+        quote
+            @_inline_meta
+            newparent = reshape(S.parent, Val($(M + NewN)))
+            Slices(newparent, $newalongs)
+        end
+    else
+        return :(@_inline_meta; reshape(S, Base.rdims(Val($NewN), axes(S))))
+    end
+end
 
 
 #
@@ -383,3 +234,17 @@ Base.copy(S::Slices) = Slices(copy(S.parent), S.alongs)
 #
 #@inline _maybe_unsqueeze(S::Slices{<:Any,<:Any,0}, v::AbsArr{<:Any,0}) = v[]
 #@inline _maybe_unsqueeze(S::Slices, v) = v
+
+@generated function check_slices_parameters(::Type{T}, ::Val{N}, ::Val{M}, ::Type{P}, ::Type{A}) where {T,N,M,P,A}
+    if !(N isa Int && M isa Int)
+        return :(throw(ArgumentError("Slices paramters N and M must be of type Int")))
+    elseif !(A <: NTuple{M+N,SBool})
+        return :(throw(ArgumentError("Slices parameter A should be of type NTuple{M+N,$SBool}")))
+    elseif N < 0 || M < 0 || ndims(P) != N + M || sum(unwrap, A.parameters) != M
+        return :(throw(ArgumentError("Dimension mismatch in Slices parameters"))) # got N=$N, M=$M, ndims(P)=$(ndims(P)), and sum(A)=$(sum(A))")))
+    else
+        return nothing
+    end
+    error("Internal error. Please file a bug")
+end
+
