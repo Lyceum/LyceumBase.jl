@@ -81,93 +81,85 @@ function test()
     nothing
 end
 
-module Mod
 using Test
 using LyceumBase: TestUtil
+using LyceumBase.TestUtil
 using LyceumBase.LyceumCore
 
-randlike(x::Number) = rand(typeof(x))
-randlike(A::AbstractArray{<:Number}) = rand(eltype(A), size(A)...)
-randlike(A::AbstractArray{<:Number,0}) = rand!(zeros(eltype(A)))
-function randlike(A::AbsArr{<:AbsArr{V,M},N}) where {V,M,N}
-    B = Array{Array{V,M},N}(undef, size(A)...)
-    for I in eachindex(B)
-        B[I] = randlike(A[I])
+const TEST_ALONGS = [
+    (static(true), ),
+    (static(false), ),
+
+    (static(true), static(true)),
+    (static(true), static(false)),
+    (static(false), static(true)),
+    (static(false), static(false)),
+]
+
+#al = TEST_ALONGS[4]
+#al = (SFalse(),)
+al = (SFalse(), STrue())
+al = reverse(al)
+#al = (STrue(), STrue())
+#al = (STrue(),)
+#al = (STrue(),)
+
+testdims(L::Integer) = ntuple(i -> 2i, Val(unstatic(L)))
+slicedims(al::TupleN{SBool}) = Tuple(i for i=1:length(al) if unstatic(al[i]))
+V=Float64
+
+function test_SNF()
+    L = length(al)
+    pdims = testdims(L)
+    sdims = slicedims(al)
+    innersz = Tuple(pdims[i] for i in 1:L if unstatic(al[i]))
+    outersz = Tuple(pdims[i] for i in 1:L if !unstatic(al[i]))
+    M, N = length(innersz), length(outersz)
+    flat = rand!(Array{V,L}(undef, pdims...))
+    nested = Array{Array{V,M},N}(undef, outersz...)
+    i = 0
+    Base.mapslices(flat, dims=sdims) do el
+        i += 1
+        nested[i] = zeros(V, innersz...)
+        nested[i] .= el
+        el
     end
-    return B
+    Slices(flat, al), nested, flat
 end
-function randlike!(A::AbsArr{<:AbsArr})
-    for I in eachindex(A)
-        copyto!(A[I], randlike(A[I]))
-    end
-    return A
+S,nested,flat = test_SNF()
+
+_maybe_squeeze(x::Number) = (y = zeros(typeof(x)); y .= x)
+_maybe_squeeze(x) = x
+for f in (
+        identity,
+        el -> sum(el),
+        el -> el isa AbsArr ? reshape(el, reverse(size(el))) : el,
+        el -> el isa AbsArr ? reshape(el, Val(1)) : el,
+    )
+    continue
+    @info "F ---- F"
+
+    B1 = Base.mapslices(f, flat, dims=slicedims(al))
+    B2 = SpecialArrays.mapslices(f, flat, dims=slicedims(al), dropdims=false)
+    @assert B1 == parent(B2)
+
+    @info "DORPDIM"
+    B3 = map(el -> f(el), slice(flat, al))
+    B4 = SpecialArrays.mapslices(f, flat, dims=slicedims(al), dropdims=true)
+    @assert B3 == B4
 end
-function randlike!(A::AbsArr{<:Number})
-    for I in eachindex(A)
-        A[I] = randlike(A[I])
-    end
-    return A
-end
+f = el -> sum(el)
+f = el -> el isa AbsArr ? reshape(el, reverse(size(el))) : el
+f = el -> el isa AbsArr ? reshape(el, Val(1)) : el
+S = slice(flat, al)
 
-macro test_index(A, I)
-    ex = quote
-        if $I isa $Base.Tuple
-            $TestUtil.@test_inferred $A[$I...]
-            if $Base.index_dimsum($I...) == ()
-                $Test.@test $Base.typeof($A[$I...]) == $Base.eltype($A)
-            else
-                $Test.@test $Base.size($A[$I...]) == $Base.map($Base.length, $Base.index_shape($Base.to_indices($A, $I)))
-                $Test.@test $Base.eltype($A[$I...]) == $Base.eltype($A)
-            end
-            local x = $randlike($A[$I...])
-            $TestUtil.@test_inferred $Base.setindex!($A, x, $I...)
-            $Test.@test $Base.setindex!($A, x, $I...) === $A
-            $Test.@test $A[$I...] == x
-        else
-            $TestUtil.@test_inferred $A[$I]
-            if $Base.index_dimsum($I) == ()
-                $Test.@test $Base.typeof($A[$I]) == $Base.eltype($A)
-            else
-                $Test.@test $Base.size($A[$I]) == $Base.map($Base.length, $Base.index_shape($Base.to_indices($A, ($I, ))))
-                $Test.@test $Base.eltype($A[$I]) == $Base.eltype($A)
-            end
-            local x = $randlike($A[$I])
-            $TestUtil.@test_inferred $Base.setindex!($A, x, $I)
-            $Test.@test $Base.setindex!($A, x, $I) === $A
-            $Test.@test $A[$I] == x
+flat = rand(100,100)
 
-        end
-    end
-    esc(ex)
-end
+g1(el) = reshape(el, reverse(size(el)))
+@code_warntype SpecialArrays.mapslices(g1, flat, dims=al, dropdims=static(true))
 
-macro test_index(A, B, I)
-    ex = quote
-        @test_index $A $I
-        if $I isa $Base.Tuple
-            $Test.@test $A[$I...] == $B[$I...]
-        else
-            $Test.@test $A[$I] == $B[$I]
-        end
-    end
-    esc(ex)
-end
+@btime SpecialArrays.mapslices(sum, $flat, dims=$al, dropdims=static(false))
+@btime Base.mapslices(sum, $flat, dims=$(slicedims(al)))
 
-
-
-end
-
-
-#module Bam
-#using ..Mod
-#using ..SpecialArrays
-using MacroTools
-
-dims=(2,3,4,1)
-#dims = dims .* 10
-A = rand(dims...)
-S = Slices(A, (1, ))
-B = [Array(el) for el in S]
-#B2 = [Array(el) for el in S]
-B1 = [view(rand!(copy(A)), :, i, j) for i=1:dims[2], j=1:dims[3]]
-B2 = [view(rand!(copy(A)), :, i, j) for i=1:dims[2], j=1:dims[3]]
+#@btime SpecialArrays.mapslices(sum, $flat, dims=$al, dropdims=static(true))
+#@btime map(sum, slice($flat, $al))
