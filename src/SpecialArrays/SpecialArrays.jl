@@ -6,7 +6,6 @@ using Base.MultiplicativeInverses: SignedMultiplicativeInverse
 using UnsafeArrays
 using Adapt
 using StaticNumbers
-using StaticArrays: SOneTo
 using ..MacroTools: @forward
 
 using ..LyceumBase.LyceumCore
@@ -17,19 +16,16 @@ const IVararg{N} = Vararg{Integer,N}
 
 include("viewtype.jl")
 
-export flatten, flatten!, nest, nest!
-export nestedview, flatview
 export innereltype, innerndims, innersize, innerlength, inneraxes
+export flatten, flatten!, flatview
+export nest, nest!
 include("functions.jl")
 
-export Slices
+export Slices, slice
 include("slices.jl")
 
 export Align
 include("align.jl")
-
-include("nestedarrays/util.jl")
-include("nestedarrays/nestedview.jl")
 
 export ElasticArray, shrinklastdim!, growlastdim!, resizelastdim!
 include("elasticarray.jl")

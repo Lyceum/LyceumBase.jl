@@ -1,118 +1,166 @@
 const TEST_ALONGS = [
-    #(static(true), ),
-    #(static(false), ),
+    (static(true), ),
+    (static(false), ),
 
-    ## 0 slices
-    #(static(false), static(false), static(false)),
-    ## 1 slices
-    #(static(false), static(false), static(true)),
-    #(static(false), static(true), static(false)),
-    #(static(true), static(false), static(false)),
-    ## 2 slices
-    #(static(true), static(true), static(false)),
-    #(static(true), static(false), static(true)),
-    (static(false), static(true), static(true)),
-    # all slices
-    #(static(true), static(true), static(true)),
+    (static(true), static(true)),
+    (static(true), static(false)),
+    (static(false), static(true)),
+    (static(false), static(false)),
 ]
 
+slicedims(al::TupleN{SBool}) = Tuple(i for i=1:length(al) if unstatic(al[i]))
 
-randA(T::Type, al::NTuple{N,SBool}) where {N} = randA(T, static(N))
-randA(al::TupleN{SBool}) = randA(DEFAULT_ELTYPE, al)
-
-randS(T::Type, al::TupleN{SBool}) = Slices(randA(T, al), al)
-randS(al::TupleN{SBool}) = randS(DEFAULT_ELTYPE)
-
-randAS(T::Type, al::TupleN{SBool}) = (A = randA(T, al); return A, Slices(A, al))
-randAS(al::TupleN{SBool}) = randAS(DEFAULT_ELTYPE, al)
-
-function randN(T::Type, al::NTuple{N,SBool}) where {N}
-    dims = testdims(N)
-    innersz = Tuple(dims[i] for i in 1:length(al) if unstatic(al[i]))
-    outersz = Tuple(dims[i] for i in 1:length(al) if !unstatic(al[i]))
-    return randN(T, innersz, outersz)
-end
-randN(al::TupleN{SBool}) = randN(DEFAULT_ELTYPE, al)
-
-testdims(L::Integer) = ntuple(i -> 2i, Val(unstatic(L)))
-slicedims(al::TupleN{SBool}) = Tuple(static(i) for i=1:N if unstatic(al[i]))
-
-function make_slices(V::Type, alongs::TupleN{SBool})
-    L = length(alongs)
-    pdims = ntuple(i -> 1 + i, L)
-    sdims = Tuple(i for i=1:L if unstatic(alongs[i]))
-    innersz = Tuple(pdims[i] for i in 1:L if unstatic(alongs[i]))
-    outersz = Tuple(pdims[i] for i in 1:L if !unstatic(alongs[i]))
-    M, N = length(innersz), length(outersz)
-    flat = rand!(Array{V,L}(undef, pdims...))
-    nested = Vector{Array{V,M}}(undef, prod(outersz))
-    i = 0
-    mapslices(el -> nested[i+=1] = copy(el), flat, dims=sdims)
-    Slices(flat, sdims), nested, flat
-end
-
-slicedims(al::NTuple{N,SBool}) where {N} = Tuple(static(i) for i=1:N if unstatic(al[i]))
-
-@testset "Slices $V $(slicedims(al))" for V in (Float64, ), al in TEST_ALONGS
-    sdims = slicedims(al)
-    dims = map(unstatic, sdims)
-
-    inaxes, outaxes = let A = randA(V, al)
-        inaxes = Tuple(axes(A, i) for i in 1:length(al) if unstatic(al[i]))
-        outaxes = Tuple(axes(A, i) for i in 1:length(al) if !unstatic(al[i]))
-        inaxes, outaxes
+# TODO add Show for slices
+function _show_alongs(io, alongs::TupleN{SBool})
+    write(io, '(')
+    if length(alongs) == 1
+        write(io, unstatic(alongs[1]) ? ':' : "i1", ',')
+    elseif length(alongs) > 1
+        write(io, unstatic(alongs[1]) ? ':' : "i1")
+        for dim = 2:length(alongs)
+            write(io, ',', ' ', unstatic(alongs[dim]) ? ':' : "i$dim")
+        end
     end
-    insize = map(length, inaxes)
-    outsize = map(length, outaxes)
+    write(io, ')')
+    return nothing
+end
 
-    M = length(insize)
-    N = length(outsize)
-    ST = Slices{<:AbsArr{V,M},N,M,Array{V,M+N},typeof(al)}
+function _show_alongs(alongs::TupleN{SBool})
+    io = IOBuffer()
+    _show_alongs(io, alongs)
+    String(take!(io))
+end
 
+
+@testset "Slices $V $(_show_alongs(al))" for V in (Float64, ), al in TEST_ALONGS
+    function test_SNF()
+        L = length(al)
+        pdims = testdims(L)
+        sdims = slicedims(al)
+        innersz = Tuple(pdims[i] for i in 1:L if unstatic(al[i]))
+        outersz = Tuple(pdims[i] for i in 1:L if !unstatic(al[i]))
+        M, N = length(innersz), length(outersz)
+        flat = rand!(Array{V,L}(undef, pdims...))
+        nested = Array{Array{V,M},N}(undef, outersz...)
+        i = 0
+        Base.mapslices(flat, dims=sdims) do el
+            i += 1
+            nested[i] = zeros(V, innersz...)
+            nested[i] .= el
+            el
+        end
+        Slices(flat, al), nested, flat
+    end
 
     @testset "constructors" begin
-        @test typeof(@inferred(Slices(randA(al), al))) <: ST
-        @test typeof(@inferred(Slices(randA(al), al...))) <: ST
-        @test typeof(Slices(randA(al), dims)) <: ST
-        @test typeof(Slices(randA(al), dims...)) <: ST
-        @test typeof(@inferred(Slices(randA(al), sdims))) <: ST
-        @test typeof(@inferred(Slices(randA(al), sdims...))) <: ST
+        _, nested, flat = test_SNF()
+        sdims = slicedims(al)
+        static_sdims = map(static, sdims)
+        M = ndims(first(nested))
+        N = ndims(nested)
+        ST = Slices{<:AbsArr{V,M},N,M,Array{V,M+N},typeof(al)}
+
+        @test typeof(Slices(flat, al)) <: ST
+        @test_inferred Slices(flat, al)
+
+        @test typeof(slice(flat, al)) <: ST
+        @test_inferred slice(flat, al)
+        @test typeof(slice(flat, al...)) <: ST
+        @test_inferred slice(flat, al...)
+
+        @test_inferred slice(flat, static_sdims)
+        @test typeof(slice(flat, static_sdims)) <: ST
+        @test_inferred slice(flat, static_sdims...)
+        @test typeof(slice(flat, static_sdims...)) <: ST
+
+        @test typeof(slice(flat, sdims)) <: ST
+        @test typeof(slice(flat, sdims...)) <: ST
     end
 
-    S, nested, flat = make_slices(V, al)
-    test_array(() -> Slices(deepcopy(flat), dims), nested)
+    @testset "array attributes" begin
+        S, _, _ = test_SNF()
+        @test_array_attributes S
 
-    continue
+        @test_noalloc eltype($S)
+        @test_noalloc ndims($S)
+        @test_noalloc axes($S)
+        @test_noalloc size($S)
+        @test_noalloc length($S)
+    end
 
-    #@testset "functions" begin
-    #    S = randS(V, al)
+    @testset "indexing" begin
+        S, nested, flat =  test_SNF()
+        test_indexing_AB(() -> Slices(deepcopy(flat), al), nested)
+    end
 
-    #    let B = @inferred(flatten(S))
-    #        @test B !== parent(S) && B == parent(S)
-    #    end
-    #    @test @inferred(flatview(S)) === parent(S)
+    @testset "misc" begin
+        S, _, _ = test_SNF()
+        @test parent(S) === S.parent
+        @test Base.dataids(S) === Base.dataids(S.parent)
+    end
 
-    #    @test @inferred(innersize(S)) == size(first(S))
-    #    @test @inferred(inneraxes(S)) == axes(first(S))
-    #    @test_noalloc innersize($S)
-    #    @test_noalloc inneraxes($S)
+    @testset "copy/copyto!/equality" begin
+        let (S, nested, _) = test_SNF()
+            @test_copyto! S nested
+        end
+        let (S, nested, _) = test_SNF()
+            @test_copyto! nested S
+        end
+        let S1 = first(test_SNF()), S2 = first(test_SNF())
+            @test_copyto! S1 S2
+        end
+    end
 
-    #    @test Slices(parent(S), @inferred(slicedims(S))) === S
-    #end
+    @testset "Extra" begin
+        S, nested, _ = test_SNF()
 
-    #@testset "UnsafeArrays" begin
-    #    S = randS(V, al)
-    #    Sv = uview(S)
-    #    @test parent(Sv) isa UnsafeArray{eltype(parent(S)), ndims(parent(S))}
-    #    @test S == Sv
-    #end
+        @test begin
+            flat = flatten(S)
+            flat !== S.parent && flat == S.parent
+        end
+        @test_inferred flatten(S)
 
-    #@testset "parentindices" begin
-    #    S = randS(V, al)
-    #    @test all(zip(LinearIndices(S), CartesianIndices(S))) do (i, I)
-    #        parentindices(S, i) == parentindices(S, I) == parentindices(S, Tuple(I)...)
-    #    end
-    #end
+        @test flatview(S) === S.parent
+        @test_inferred flatview(S)
+
+        @test innersize(S) == size(first(S))
+        @test_inferred innersize(S)
+        @test_noalloc inneraxes($S)
+
+        @test inneraxes(S) == axes(first(S))
+        @test_inferred inneraxes(S)
+        @test_noalloc innersize($S)
+    end
+
+    @testset "UnsafeArrays" begin
+        S, _, _= test_SNF()
+        Sv = uview(S)
+        @test parent(Sv) isa UnsafeArray{eltype(S.parent), ndims(S.parent)}
+        @test S == Sv
+    end
+
+    @testset "mapslicea" for f in (
+        identity,
+        el -> sum(el),
+        el -> el isa AbsArr ? reshape(el, reverse(size(el))) : el,
+        el -> el isa AbsArr ? reshape(el, Val(1)) : el,
+    )
+        # dropdims=false/Base.mapslices behavior
+        let (S, _, flat) = test_SNF()
+            @test_inferred SpecialArrays.mapslices(f, flat, dims=al)
+            B1 = mapslices(f, flat, dims=slicedims(al))
+            B2 = flatview(SpecialArrays.mapslices(f, flat, dims=al))
+            @test B1 == B2
+        end
+
+        # dropdims=true
+        let (S, _, flat) = test_SNF()
+            @test_inferred SpecialArrays.mapslices(f, flat, dims=al, dropdims=static(true))
+            B1 = map(f, slice(flat, slicedims(al)))
+            B2 = SpecialArrays.mapslices(f, flat, dims=al, dropdims=static(true))
+            @test B1 == B2
+        end
+    end
 end
 
 #@testset "non-standard indexing (AxisArrays)" begin
