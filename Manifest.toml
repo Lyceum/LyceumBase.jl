@@ -1,5 +1,5 @@
 [[Pkg]]
-deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Test", "UUIDs"]
+deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[SuiteSparse]]
@@ -41,7 +41,7 @@ version = "1.0.0"
 
 [[UniversalLogger]]
 deps = ["Logging", "PushVectors"]
-git-tree-sha1 = "4cf96cfa9c04967831e6b4acd877f8bca5811213"
+git-tree-sha1 = "d9433c480dd7e64c7f042cf2bfdd63e8f1d99be9"
 repo-rev = "master"
 uuid = "5c5e3362-9445-4819-9f95-51c44c51adeb"
 repo-url = "https://github.com/Lyceum/UniversalLogger.jl.git"
@@ -60,9 +60,9 @@ version = "0.17.10"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "c437ba8bb82f5ec9a5d8cb881031ffa2dbe1038c"
+git-tree-sha1 = "0198d18b28c093bef39872a22f1a897218a925f5"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "3.6.0"
+version = "3.8.0"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -81,9 +81,9 @@ version = "0.9.4"
 
 [[CompilerSupportLibraries_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "b57c5d019367c90f234a7bc7e24ff0a84971da5d"
+git-tree-sha1 = "067567a322fe466c5ec8d01413eee7127bd11699"
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "0.2.0+1"
+version = "0.3.1+0"
 
 [[Future]]
 deps = ["Random"]
@@ -127,9 +127,9 @@ version = "0.9.5"
 
 [[Distributions]]
 deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "d5b170997483dcc19b6f153d15a21aae561eb754"
+git-tree-sha1 = "39756d6038ba28cc4228a40ab0d92bb2f7015ee8"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.22.5"
+version = "0.23.1"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
@@ -166,6 +166,7 @@ uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
 version = "0.6.0"
 
 [[LibGit2]]
+deps = ["Printf"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 
 [[Dates]]
@@ -201,9 +202,9 @@ version = "0.2.5"
 
 [[PDMats]]
 deps = ["Arpack", "LinearAlgebra", "SparseArrays", "SuiteSparse", "Test"]
-git-tree-sha1 = "5f303510529486bb02ac4d70da8295da38302194"
+git-tree-sha1 = "2fc6f50ddd959e462f0a2dbc802ddf2a539c6e35"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
-version = "0.9.11"
+version = "0.9.12"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
@@ -255,7 +256,7 @@ version = "0.3.0"
 
 [[Shapes]]
 deps = ["Adapt", "MacroTools", "Random", "Requires", "StaticArrays", "UnsafeArrays"]
-git-tree-sha1 = "e5c94b7e6ea6dfc6d7cc2b7f967eb4f879d0b06b"
+git-tree-sha1 = "f19626385fc7a50d9fcda72c40abf93df3cdc9a2"
 repo-rev = "master"
 uuid = "175de200-b73b-11e9-28b7-9b5b306cec37"
 repo-url = "https://github.com/Lyceum/Shapes.jl.git"
@@ -355,9 +356,9 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[OpenBLAS_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "858f107d79a016d9511e34186fe2af11566ba762"
+git-tree-sha1 = "139adbff69e8149e68824994b68f06a61a5a2797"
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.7+7"
+version = "0.3.7+8"
 
 [[Zlib_jll]]
 deps = ["Libdl", "Pkg"]
@@ -419,10 +420,10 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.0.1"
 
 [[MacroTools]]
-deps = ["DataStructures", "Markdown", "Random"]
-git-tree-sha1 = "07ee65e03e28ca88bc9a338a3726ae0c3efaa94b"
+deps = ["Markdown", "Random"]
+git-tree-sha1 = "f7d2e3f654af75f01ec49be82c231c382214223a"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.4"
+version = "0.5.5"
 
 [[Arpack_jll]]
 deps = ["Libdl", "OpenBLAS_jll", "Pkg"]
