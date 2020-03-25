@@ -3,7 +3,6 @@ const TEST_ALONGS = [
     (static(false), ),
 
     (static(true), static(true)),
-    (static(true), static(false)),
     (static(false), static(true)),
     (static(false), static(false)),
 ]
@@ -88,10 +87,12 @@ end
         @test_noalloc length($S)
     end
 
+    @time begin
     @testset "indexing" begin
         S, nested, flat =  test_SNF()
         test_indexing_AB(() -> Slices(deepcopy(flat), al), nested)
     end
+end
 
     @testset "misc" begin
         S, _, _ = test_SNF()

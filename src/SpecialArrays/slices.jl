@@ -1,7 +1,7 @@
 struct Slices{T,N,M,P<:AbsArr,A} <: AbstractArray{T,N}
     parent::P
     alongs::A
-    function Slices{T,N,M,P,A}(parent, alongs) where {T,N,M,P<:AbsArr,A}
+    @inline function Slices{T,N,M,P,A}(parent, alongs) where {T,N,M,P<:AbsArr,A}
         check_slices_parameters(T, Val(N), Val(M), P, A)
         new(parent, alongs)
     end
@@ -28,7 +28,7 @@ end
 
 @inline Base.size(S::Slices) = static_filter(SFalse(), S.alongs, size(S.parent))
 
-# Cartesian indexing
+# standard Cartesian indexing
 @propagate_inbounds function Base.getindex(S::Slices{<:Any,N}, I::Vararg{Int,N}) where {N}
     view(S.parent, parentindices(S, I)...)
 end
@@ -76,7 +76,7 @@ reslice(::Tuple{}, ::Tuple{}) = ()
 end
 
 # Fall back to Cartesian indexing.
-@propagate_inbounds _getindex(S::Slices, J::Tuple, ::Tuple) = getindex(Indexer(A), J...)
+@propagate_inbounds _getindex(S::Slices, J::Tuple, ::Tuple) = getindex(CartesianIndexer(A), J...)
 
 Base.IndexStyle(::Type{<:Slices}) = IndexCartesian()
 

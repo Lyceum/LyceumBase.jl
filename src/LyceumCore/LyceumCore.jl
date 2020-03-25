@@ -35,7 +35,7 @@ export static_not, static_and, static_or
 export static_filter, static_merge, static_in, static_sum
 include("static.jl")
 
-export ncolons, front, tail
+export ncolons, front, tail, tuplesplit
 include("util.jl")
 
 end

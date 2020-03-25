@@ -24,8 +24,8 @@ include("functions.jl")
 export Slices, slice
 include("slices.jl")
 
-export Align
-include("align.jl")
+export FlattenedArray
+include("flattenedarray.jl")
 
 export ElasticArray, shrinklastdim!, growlastdim!, resizelastdim!
 include("elasticarray.jl")
