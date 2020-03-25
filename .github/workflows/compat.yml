@@ -28,7 +28,7 @@ jobs:
           julia --color=yes -e 'using Pkg; Registry.add(RegistrySpec(url = "https://github.com/Lyceum/LyceumRegistry.git"))'
           julia --color=yes -e 'using Pkg; Registry.add(RegistrySpec(url = "https://github.com/JuliaRegistries/General.git"))'
       - name: Add LyceumDevTools
-        run: julia --color=yes -e 'using Pkg; Pkg.add(PackageSpec(name="LyceumDevTools", rev="master"))'
+        run: julia --color=yes -e 'using Pkg; Pkg.add("LyceumDevTools")'
       - name: Update compat
         run: julia --color=yes -e 'using LyceumDevTools; LyceumDevTools.Compat.ghactions()'
         env:
