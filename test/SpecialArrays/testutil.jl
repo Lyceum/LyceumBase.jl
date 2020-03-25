@@ -183,119 +183,111 @@ function test_indexing_AB(f::Function, B::Array)
         () -> return f(), deepcopy(B)
     end
 
-    A,B =AB()
-    @test_array_attributes A
-    @test_similar A Int
-
-    @testset "indexing" begin
-        @testset "LinearIndices" begin
-            let (A, _) = AB()
-                @test_getindex A first(LinearIndices(A))
-                @test_setindex! A first(LinearIndices(A))
-            end
-            let (A, B) = AB()
-                @test LinearIndices(A) === LinearIndices(B)
-                @test_all_equal A B LinearIndices(A)
-                @test_getindices A LinearIndices(A)
-                @test_setindices! A LinearIndices(A)
-            end
-            let (A, B) = AB()
-                @test A[LinearIndices(A)] == B[LinearIndices(A)]
-                @test_getindex A LinearIndices(A)
-                @test_setindex! A LinearIndices(A)
-            end
-            let (A, B) = AB()
-                @test begin
-                    I = hcat(LinearIndices(A), LinearIndices(A))
-                    A[I] == B[I]
-                end
-                @test_getindex A hcat(LinearIndices(A), LinearIndices(A))
-                #@test_setindex! A hcat(LinearIndices(A), LinearIndices(A))
-            end
+    @testset "LinearIndices" begin
+        let (A, _) = AB()
+            @test_getindex A first(LinearIndices(A))
+            @test_setindex! A first(LinearIndices(A))
         end
-        @testset "CartesianIndices" begin
-            let (A, _) = AB()
-                @test_getindex A first(CartesianIndices(A))
-                @test_setindex! A first(CartesianIndices(A))
-            end
-            let (A, B) = AB()
-                @test CartesianIndices(A) === CartesianIndices(B)
-                @test_all_equal A B CartesianIndices(A)
-                @test_getindices A CartesianIndices(A)
-                @test_setindices! A CartesianIndices(A)
-            end
-            let (A, B) = AB()
-                @test A[CartesianIndices(A)] == B[CartesianIndices(A)]
-                @test_getindex A CartesianIndices(A)
-                @test_setindex! A CartesianIndices(A)
-            end
-            let (A, B) = AB()
-                @test begin
-                    I = hcat(CartesianIndices(A), CartesianIndices(A))
-                    A[I] == B[I]
-                end
-                @test_getindex A hcat(CartesianIndices(A), CartesianIndices(A))
-                #@test_setindex! A CartesianIndices(A)
-            end
+        let (A, B) = AB()
+            @test LinearIndices(A) === LinearIndices(B)
+            @test_all_equal A B LinearIndices(A)
+            @test_getindices A LinearIndices(A)
+            @test_setindices! A LinearIndices(A)
         end
-        @testset "trailing singleton" begin
-            let (A, _) = AB()
-                @test_getindex A (Tuple(first(CartesianIndices(A)))..., 1)
-                @test_setindex! A (Tuple(first(CartesianIndices(A)))..., 1)
-            end
-            let (A, B) = AB()
-                @test_all_equal A B [(Tuple(I)..., 1) for I in CartesianIndices(A)]
-                @test_getindices A [(Tuple(I)..., 1) for I in CartesianIndices(A)]
-                @test_setindices! A [(Tuple(I)..., 1) for I in CartesianIndices(A)]
-            end
+        let (A, B) = AB()
+            @test A[LinearIndices(A)] == B[LinearIndices(A)]
+            @test_getindex A LinearIndices(A)
+            @test_setindex! A LinearIndices(A)
         end
-        @testset "trailing colon" begin
-            let (A, _) = AB()
-                @test_getindex A (Tuple(first(CartesianIndices(A)))..., :)
-                @test_setindex! A (Tuple(first(CartesianIndices(A)))..., :)
+        let (A, B) = AB()
+            @test begin
+                I = hcat(LinearIndices(A), LinearIndices(A))
+                A[I] == B[I]
             end
-            let (A, B) = AB()
-                @test_all_equal A B [(Tuple(I)..., :) for I in CartesianIndices(A)]
-                @test_getindices A [(Tuple(I)..., :) for I in CartesianIndices(A)]
-                @test_setindices! A [(Tuple(I)..., :) for I in CartesianIndices(A)]
-            end
-        end
-        @testset "dropped singleton" begin
-            if ndims(B) > 0 && size(B, ndims(B)) == 1
-                let (A, _) = AB()
-                    @test_getindex A front(Tuple(first(CartesianIndices(A))))
-                    @test_setindex! A front(Tuple(first(CartesianIndices(A))))
-                end
-                let (A, B) = AB()
-                    @test_all_equal A B [front(Tuple(I)) for I in CartesianIndices(A)]
-                    @test_getindices A [front(Tuple(I)) for I in CartesianIndices(A)]
-                    @test_setindices! A [front(Tuple(I)) for I in CartesianIndices(A)]
-                end
-            end
-        end
-        @testset "logical" begin
-            let (A, B) = AB()
-                @test begin
-                    I = map(isodd, LinearIndices(A))
-                    A[I] == B[I]
-                end
-                @test_getindex A map(isodd, LinearIndices(A))
-                @test_setindex! A map(isodd, LinearIndices(A))
-            end
-            let (A, B) = AB()
-                @test begin
-                    I = Tuple(map(isodd, ax) for ax in axes(A))
-                    A[I...] == B[I...]
-                end
-                @test_getindex A Tuple(map(isodd, ax) for ax in axes(A))
-                @test_setindex! A Tuple(map(isodd, ax) for ax in axes(A))
-            end
-        end
-        @testset "single colon" begin
-            A, B = AB()
-            @test A[:] == B[:]
+            @test_getindex A hcat(LinearIndices(A), LinearIndices(A))
+            #@test_setindex! A hcat(LinearIndices(A), LinearIndices(A))
         end
     end
-
-
+    @testset "CartesianIndices" begin
+        let (A, _) = AB()
+            @test_getindex A first(CartesianIndices(A))
+            @test_setindex! A first(CartesianIndices(A))
+        end
+        let (A, B) = AB()
+            @test CartesianIndices(A) === CartesianIndices(B)
+            @test_all_equal A B CartesianIndices(A)
+            @test_getindices A CartesianIndices(A)
+            @test_setindices! A CartesianIndices(A)
+        end
+        let (A, B) = AB()
+            @test A[CartesianIndices(A)] == B[CartesianIndices(A)]
+            @test_getindex A CartesianIndices(A)
+            @test_setindex! A CartesianIndices(A)
+        end
+        let (A, B) = AB()
+            @test begin
+                I = hcat(CartesianIndices(A), CartesianIndices(A))
+                A[I] == B[I]
+            end
+            @test_getindex A hcat(CartesianIndices(A), CartesianIndices(A))
+            #@test_setindex! A CartesianIndices(A)
+        end
+    end
+    @testset "trailing singleton" begin
+        let (A, _) = AB()
+            @test_getindex A (Tuple(first(CartesianIndices(A)))..., 1)
+            @test_setindex! A (Tuple(first(CartesianIndices(A)))..., 1)
+        end
+        let (A, B) = AB()
+            @test_all_equal A B [(Tuple(I)..., 1) for I in CartesianIndices(A)]
+            @test_getindices A [(Tuple(I)..., 1) for I in CartesianIndices(A)]
+            @test_setindices! A [(Tuple(I)..., 1) for I in CartesianIndices(A)]
+        end
+    end
+    @testset "trailing colon" begin
+        let (A, _) = AB()
+            @test_getindex A (Tuple(first(CartesianIndices(A)))..., :)
+            @test_setindex! A (Tuple(first(CartesianIndices(A)))..., :)
+        end
+        let (A, B) = AB()
+            @test_all_equal A B [(Tuple(I)..., :) for I in CartesianIndices(A)]
+            @test_getindices A [(Tuple(I)..., :) for I in CartesianIndices(A)]
+            @test_setindices! A [(Tuple(I)..., :) for I in CartesianIndices(A)]
+        end
+    end
+    @testset "dropped singleton" begin
+        if ndims(B) > 0 && size(B, ndims(B)) == 1
+            let (A, _) = AB()
+                @test_getindex A front(Tuple(first(CartesianIndices(A))))
+                @test_setindex! A front(Tuple(first(CartesianIndices(A))))
+            end
+            let (A, B) = AB()
+                @test_all_equal A B [front(Tuple(I)) for I in CartesianIndices(A)]
+                @test_getindices A [front(Tuple(I)) for I in CartesianIndices(A)]
+                @test_setindices! A [front(Tuple(I)) for I in CartesianIndices(A)]
+            end
+        end
+    end
+    @testset "logical" begin
+        let (A, B) = AB()
+            @test begin
+                I = map(isodd, LinearIndices(A))
+                A[I] == B[I]
+            end
+            @test_getindex A map(isodd, LinearIndices(A))
+            @test_setindex! A map(isodd, LinearIndices(A))
+        end
+        let (A, B) = AB()
+            @test begin
+                I = Tuple(map(isodd, ax) for ax in axes(A))
+                A[I...] == B[I...]
+            end
+            @test_getindex A Tuple(map(isodd, ax) for ax in axes(A))
+            @test_setindex! A Tuple(map(isodd, ax) for ax in axes(A))
+        end
+    end
+    @testset "single colon" begin
+        A, B = AB()
+        @test A[:] == B[:]
+    end
 end
