@@ -1,7 +1,6 @@
 module TestSetfield
 
-using Test
-using LyceumBase: @set!
+include("preamble.jl")
 
 struct Imm
     x

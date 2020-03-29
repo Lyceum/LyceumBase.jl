@@ -19,6 +19,7 @@ JLSO = "9da8a3cd-07a3-59c0-a743-3fdc52c30d11"
 LibGit2 = "76f85450-5226-5b5a-8eaa-529ad045b433"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+LyceumCore = "e5bd5517-2193-49f0-ba9c-d5a8508cb639"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
@@ -55,12 +56,3 @@ UnicodePlots = "1.2"
 UniversalLogger = "0.2"
 UnsafeArrays = "1"
 julia = "1.3"
-
-[extras]
-AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-KahanSummation = "8e2b3108-d4c1-50be-a7a2-16352aec75c3"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test", "KahanSummation", "BenchmarkTools", "AxisArrays"]

@@ -14,7 +14,7 @@ using BenchmarkTools: @benchmark
 # Lyceum
 import UniversalLogger: finish!
 using ..LyceumBase, Shapes, UniversalLogger
-using ..LyceumBase.LyceumCore
+using LyceumCore
 #using ..LyceumBase: TupleN, Maybe, AbsMat
 
 include("misc.jl")
