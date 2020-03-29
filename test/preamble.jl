@@ -5,3 +5,4 @@ using Test
 using LyceumBase
 using LyceumBase: @set!
 
+include("util.jl")

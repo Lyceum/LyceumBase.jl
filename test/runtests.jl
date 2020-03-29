@@ -1,9 +1,6 @@
 module TestLyceumBase
 
-#include("preamble.jl")
-using Test
-
-include("testutil.jl")
+include("preamble.jl")
 
 @includetests ProgressTestSet "LyceumBase"
 
