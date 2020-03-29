@@ -1,11 +1,10 @@
-using LyceumBase
-using Test
-using BenchmarkTools
+module TestLyceumBase
 
-@testset "LyceumBase.jl" begin
-    #@testset "Tools" begin include("Tools/Tools.jl") end
-    #@testset "setfield" begin include("setfield.jl") end
-    @testset "SpecialArrays" begin
-        include("SpecialArrays/SpecialArrays.jl")
-    end
-end
+#include("preamble.jl")
+using Test
+
+include("testutil.jl")
+
+@includetests ProgressTestSet "LyceumBase"
+
+end # module

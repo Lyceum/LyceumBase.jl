@@ -1,18 +1,14 @@
 module LyceumBase
 
 using Base: @propagate_inbounds
-using Test
-using Random
-using Shapes
 using BenchmarkTools: BenchmarkTools
 using DocStringExtensions
-using Reexport
-using StaticNumbers
 using MacroTools
+using Random
+using Reexport
+using Shapes
+using StaticNumbers
 
-
-include("LyceumCore/LyceumCore.jl")
-using .LyceumCore
 
 include("util.jl")
 
@@ -39,6 +35,7 @@ function tconstruct(T::Type, n::Integer, args...; kwargs...)
 end
 export tconstruct
 
+
 export AbstractEnvironment
 export statespace, getstate!, setstate!, getstate
 export obsspace, getobs!, getobs
@@ -54,13 +51,6 @@ include("abstractenvironment.jl")
 ####
 #### Submodules
 ####
-
-include("TestUtil/TestUtil.jl")
-using .TestUtil
-
-export SpecialArrays
-include("SpecialArrays/SpecialArrays.jl")
-using .SpecialArrays
 
 export Tools
 include("Tools/Tools.jl")
