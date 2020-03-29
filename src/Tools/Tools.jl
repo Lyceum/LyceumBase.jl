@@ -31,7 +31,6 @@ export
     @noalloc,
     mkgoodpath,
     filter_nt,
-    KahanSum,
     perturb!,
     perturbn!,
     perturb,

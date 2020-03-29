@@ -183,50 +183,6 @@ function filter_nt(
 end
 
 
-struct KahanSum{T<:Number}
-    sum::T
-    c::T
-    n::Int
-end
-KahanSum(T::Type{<:Number} = Float64) = KahanSum(T(0), T(0), 0)
-KahanSum(sum::T) where {T<:Number} = KahanSum(sum, T(0), 1)
-
-Statistics.mean(s::KahanSum) = s.sum / s.n
-Base.sum(s::KahanSum) = s.sum + s.c
-
-Base.:(+)(x::KahanSum, y::Number) = _add(x, y)
-Base.:(+)(x::Number, y::KahanSum) = _add(y, x)
-Base.:(+)(x::KahanSum, y::KahanSum) = _add(x, y)
-
-function _add(s::KahanSum{T}, x::U) where {T,U<:Number}
-    V = Base.promote_op(+, T, U)
-    sum, c, n = convert(V, s.sum), convert(V, s.c), s.n
-    x = convert(V, x)
-
-    t = sum + x
-    c += ifelse(abs(sum) >= abs(x), (sum - t) + x, (x - t) + sum)
-
-    KahanSum{V}(t, c, n + 1)
-end
-
-function _add(s1::KahanSum{T}, s2::KahanSum{U}) where {T,U}
-    V = Base.promote_op(+, T, U)
-
-    sum1, c1, n1 = convert(V, s1.sum), convert(V, s1.c), s1.n
-    sum2, c2, n2 = convert(V, s2.sum), convert(V, s2.c), s2.n
-
-    sum = _addkbn(sum1, sum2)
-    c = _addkbn(c1, c2)
-    KahanSum{V}(sum, c, n1 + n2)
-end
-
-function _addkbn(x, y)
-    t = x + y
-    c = ifelse(abs(x) >= abs(y), (x - t) + y, (y - t) + x)
-    t - c
-end
-
-
 perturb!(A::AbstractArray) = perturb!(Random.default_rng(), A)
 perturbn!(A::AbstractArray) = perturb!(Random.default_rng(), A)
 perturb!(s::Sampleable, A::AbstractArray) = perturb!(Random.default_rng(), s, A)

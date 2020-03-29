@@ -7,7 +7,6 @@ using ElasticArrays
 using UnsafeArrays
 using Random
 using Distributions: Uniform
-using KahanSummation
 using LinearAlgebra
 
 @testset "LyceumTools.jl" begin
