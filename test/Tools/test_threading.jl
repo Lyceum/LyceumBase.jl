@@ -1,3 +1,7 @@
+module TestThreading
+
+include("../preamble.jl")
+
 @testset "splitrange/getrange" begin
     let N = 16, np = 4
         x = splitrange(N, np)
@@ -46,4 +50,6 @@ end
         end
         @test nblasthreads() == 1
     end
+end
+
 end

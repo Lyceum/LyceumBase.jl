@@ -1,23 +1,34 @@
 module Tools
 
-# stdlib
-using LibGit2, Pkg, Statistics, Random, LinearAlgebra, InteractiveUtils, Logging, Dates
-using Future: randjump
-using Test: @test
+using ..LyceumBase
 
-# 3rd party
-import UnicodePlots
-using UnsafeArrays, StaticArrays, EllipsisNotation, ElasticArrays, MacroTools, JLSO, Parameters, Adapt
+using Adapt
+using Dates
 using Distributions: Sampleable
-using BenchmarkTools: @benchmark
-
-# Lyceum
-import UniversalLogger: finish!
-using ..LyceumBase, Shapes, UniversalLogger
+using ElasticArrays
+using EllipsisNotation
+using Future: randjump
+using InteractiveUtils
+using JLSO
+using LibGit2
+using LinearAlgebra
+using Logging
 using LyceumCore
-#using ..LyceumBase: TupleN, Maybe, AbsMat
+using MacroTools
+using Parameters
+using Pkg
+using Random
+using Shapes
+using StaticArrays
+using Statistics
+using Test: @test
+using UnicodePlots: UnicodePlots
+using UniversalLogger
+import UniversalLogger: finish!
+using UnsafeArrays
 
 include("misc.jl")
+
 export
     delta,
     scaleandcenter!,

@@ -1,7 +1,6 @@
 module LyceumBase
 
 using Base: @propagate_inbounds
-using BenchmarkTools: BenchmarkTools
 using DocStringExtensions
 using MacroTools
 using Random

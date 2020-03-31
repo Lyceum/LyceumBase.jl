@@ -1,17 +1,12 @@
 # TODO relies on implementation details of BangBang for pure versions (_setindex)
 module SetfieldImpl
 
-using BangBang: NoBang, BangBang, implements
-using Setfield: ComposedLens,
-                ConstIndexLens,
-                DynamicIndexLens,
-                IndexLens,
-                Lens,
-                PropertyLens,
-                Setfield,
-                set
-using ..LyceumBase: propertytype
-using ..DocStringExtensions
+using BangBang: BangBang, NoBang, implements
+using DocStringExtensions
+
+using Setfield: Setfield
+using Setfield: ComposedLens, ConstIndexLens, DynamicIndexLens, IndexLens
+using Setfield: Lens, PropertyLens, set
 
 
 export @set!, prefermutation
