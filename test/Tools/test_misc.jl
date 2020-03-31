@@ -1,3 +1,7 @@
+module TestMisc
+
+include("../preamble.jl")
+
 let x = rand(100)
     x[1] = 0
     x[2] = 1
@@ -59,3 +63,5 @@ end
         perturb!(r1, d, A) == B
     end
 end
+
+end # module

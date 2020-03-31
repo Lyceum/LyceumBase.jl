@@ -125,13 +125,6 @@ LyceumBase.reset!(x::Converged{T}) where {T} =
     (x.initialized = false; x.lastval = zero(T); x)
 
 
-macro noalloc(expr)
-    quote
-        local tmp = @benchmark $expr samples = 1 evals = 1
-        @test iszero(tmp.allocs)
-    end
-end
-
 function mkgoodpath(filepath::String; force::Bool = false, sep = '_')
     isdir(filepath) && throw(ArgumentError("$filepath is a directory"))
 

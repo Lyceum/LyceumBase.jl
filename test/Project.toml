@@ -1,5 +1,12 @@
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ElasticArrays = "fdbdab4c-e67f-52f5-8c3f-e7b388dad3d4"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LyceumDevTools = "fd23256c-5a67-41c4-8f5a-c8cf5526e505"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Shapes = "175de200-b73b-11e9-28b7-9b5b306cec37"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
