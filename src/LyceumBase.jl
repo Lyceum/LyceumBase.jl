@@ -2,11 +2,17 @@ module LyceumBase
 
 using Base: @propagate_inbounds
 using DocStringExtensions
+using LyceumCore
 using MacroTools
+using Parameters
 using Random
 using Reexport
+
+using SpecialArrays
+using SpecialArrays: True, False
+
 using Shapes
-using StaticNumbers
+using UnsafeArrays
 
 
 include("util.jl")
@@ -40,17 +46,27 @@ export statespace, getstate!, setstate!, getstate
 export obsspace, getobs!, getobs
 export actionspace, getaction!, setaction!, getaction
 export rewardspace, getreward
-export evalspace, geteval
 export reset!, randreset!
 export step!, isdone, timestep
 export spaces
 include("abstractenvironment.jl")
+
+####
+#### Tools
+####
+
+export Trajectory, TrajectoryVector
+include("trajectory.jl")
+
+export EnvironmentSampler
+include("environmentsampler.jl")
 
 
 ####
 #### Submodules
 ####
 
+# TODO remove
 export Tools
 include("Tools/Tools.jl")
 using .Tools

@@ -65,23 +65,6 @@ end
 end
 
 
-macro forwardfield(ex, fs)
-    @capture(ex, T_.field_) || error("Syntax: @forward T.x f, g, h")
-    T = esc(T)
-    fs = isexpr(fs, :tuple) ? map(esc, fs.args) : [esc(fs)]
-    :(
-        $(
-            [
-                :(
-                    $f(x::$T, args...; kwargs...) = (Base.@_inline_meta;
-                    $f(getfield(x, $(QuoteNode(field))), args...; kwargs...))
-                )
-                for f in fs
-            ]...
-        );
-        nothing
-    )
-end
 
 isnaninf(x::Number) = isinf(x) || isnan(x)
 
@@ -121,8 +104,7 @@ function (x::Converged)(val::Real)
     ret
 end
 
-LyceumBase.reset!(x::Converged{T}) where {T} =
-    (x.initialized = false; x.lastval = zero(T); x)
+LyceumBase.reset!(x::Converged{T}) where {T} = (x.initialized = false; x.lastval = zero(T); x)
 
 
 function mkgoodpath(filepath::String; force::Bool = false, sep = '_')

@@ -26,11 +26,11 @@ end
     y = zeros(1000)
     seed_threadrngs!(rngs, 1)
     Threads.@threads for i = 1:length(x)
-       x[i] = rand(rngs[Threads.threadid()])
+        x[i] = rand(rngs[Threads.threadid()])
     end
     seed_threadrngs!(rngs, 1)
     Threads.@threads for i = 1:length(x)
-       y[i] = rand(rngs[Threads.threadid()])
+        y[i] = rand(rngs[Threads.threadid()])
     end
     @test x == y
     states = map(rng -> rng.state, rngs)

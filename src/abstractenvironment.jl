@@ -5,9 +5,7 @@ Supertype for all environments.
 """
 abstract type AbstractEnvironment end
 
-const EnvSpaces = NamedTuple{
-    (:statespace, :obsspace, :actionspace, :rewardspace, :evalspace),
-}
+const EnvSpaces = NamedTuple{(:statespace, :obsspace, :actionspace, :rewardspace)}
 
 
 """
@@ -204,63 +202,6 @@ end
 
 
 """
-    evalspace(env::AbstractEnvironment) --> Shapes.AbstractShape
-
-Returns a subtype of `Shapes.AbstractShape` describing the evaluation space of `env`.
-Defaults to `Shapes.ScalarShape{Float64}()`.
-
-See also: [`geteval`](@ref).
-
-!!! note
-    Currently, only scalar evaluation spaces are supported (e.g. `Shapes.ScalarShape`).
-"""
-@inline evalspace(env::AbstractEnvironment) = ScalarShape{Float64}()
-
-"""
-    geteval(state, action, observation, env::AbstractEnvironment)
-
-Get the current evaluation metric of `env` as a function of `state`, `action`,
-and `observation`. The returned value will be an object conforming to the
-evaluation space returned by `evalspace(env)`.
-
-Often times reward functions are heavily "shaped" and hard to interpret.
-For example, the reward function for bipedal walking may include root pose, ZMP terms, control costs, etc.,
-while success can instead be simply evaluated by distance of the root along an axis. The evaluation
-metric serves to fill this gap.
-
-The default behavior is to return `getreward(state, action, observation, env::AbstractEnvironment)`.
-
-See also: [`evalspace`](@ref).
-
-!!! note
-    Currently, only scalar evaluation metrics are supported, so there is no in-place `geteval!`.
-
-!!! note
-    Implementers of custom `AbstractEnvironment` subtypes should be careful to
-    ensure that the result of `geteval` is purely a function of `state`/`action`/`observation`
-    and not any internal, dynamic state contained in `env`.
-"""
-@mustimplement geteval(state, action, observation, env::AbstractEnvironment)
-
-"""
-    geteval(env::AbstractEnvironment)
-
-Get the current evaluation metric of `env`.
-
-Internally calls `geteval(getstate(env), getaction(env), getobs(env), env)`.
-
-See also: [`evalspace`](@ref).
-
-!!! note
-    Implementers of custom `AbstractEnvironment` subtypes should implement
-    `geteval(state, action, obs, env)`.
-"""
-@propagate_inbounds function geteval(env::AbstractEnvironment)
-    geteval(getstate(env), getaction(env), getobs(env), env)
-end
-
-
-"""
     reset!(env::AbstractEnvironment)
 
 Reset `env` to a fixed, initial state with zero/passive controls.
@@ -291,24 +232,24 @@ See also: [`timestep`](@ref).
 
 
 """
-    isdone(state, action, observation, env::AbstractEnvironment) --> Bool
+    isdone(state, observation, env::AbstractEnvironment) --> Bool
 
-Returns `true` if `state`, `action`, and `observation` meet an
-early termination condition for `env`. Defaults to `false`.
+Returns `true` if `state` and `observation` meet an early termination condition for `env`.
+Defaults to `false`.
 
 !!! note
     Implementers of custom `AbstractEnvironment` subtypes should be careful to
-    ensure that the result of `isdone` is purely a function of `state`/`action`/`observation`
+    ensure that the result of `isdone` is purely a function of `state` and `observation`
     and not any internal, dynamic state contained in `env`.
 """
-isdone(state, action, obs, env::AbstractEnvironment) = false
+isdone(state, obs, env::AbstractEnvironment) = false
 
 """
     isdone(env::AbstractEnvironment)
 
 Returns `true` if `env` has met an early termination condition.
 
-Internally calls `isdone(getstate(env), getaction(env), getobs(env), env)`.
+Internally calls `isdone(getstate(env), getobs(env), env)`.
 
 !!! note
     Implementers of custom `AbstractEnvironment` subtypes should implement
@@ -363,11 +304,5 @@ sp = spaces(env)
 ```
 """
 function spaces(env::AbstractEnvironment)
-    EnvSpaces((
-        statespace(env),
-        obsspace(env),
-        actionspace(env),
-        rewardspace(env),
-        evalspace(env),
-    ))
+    EnvSpaces((statespace(env), obsspace(env), actionspace(env), rewardspace(env)))
 end

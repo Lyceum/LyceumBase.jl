@@ -6,11 +6,12 @@ end
 
 @noinline function seed_threadrngs!(
     rngs::Vector{MersenneTwister},
-    seed::Union{Integer, Array{UInt32, 1}} = Random.make_seed();
+    seed::Union{Integer,Array{UInt32,1}} = Random.make_seed();
     jump::Integer = TJUMP,
 )
     nt = Threads.nthreads()
-    Threads.threadid() == 1 || throw(ArgumentError("Can only call `seed_threadrngs!` from main thread"))
+    Threads.threadid() == 1 ||
+    throw(ArgumentError("Can only call `seed_threadrngs!` from main thread"))
     if length(rngs) != nt
         throw(ArgumentError("length(rngs) must equal Threads.nthreads()"))
     end
@@ -61,11 +62,7 @@ end
 
 
 function nblasthreads()
-    ccall(
-        (BLAS.@blasfunc(openblas_get_num_threads), Base.libblas_name),
-        LinearAlgebra.BlasInt,
-        (),
-    )
+    ccall((BLAS.@blasfunc(openblas_get_num_threads), Base.libblas_name), LinearAlgebra.BlasInt, ())
 end
 
 macro with_blasthreads(nthreads, expr)

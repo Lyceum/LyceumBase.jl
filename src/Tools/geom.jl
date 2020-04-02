@@ -1,4 +1,4 @@
-abstract type Point3D{T} <: FieldVector{3, T} end
+abstract type Point3D{T} <: FieldVector{3,T} end
 
 struct SPoint3D{T} <: Point3D{T}
     x::T
@@ -33,4 +33,3 @@ end
     end
     nothing
 end
-

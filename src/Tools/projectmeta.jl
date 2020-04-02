@@ -1,10 +1,6 @@
 function environment(; repospec = nothing, verbose_versioninfo = false)
     project, manifest, verinfo = projectmeta(verbose = verbose_versioninfo)
-    meta = Dict{Symbol,Any}(
-        :project => project,
-        :manifest => manifest,
-        :versioninfo => verinfo,
-    )
+    meta = Dict{Symbol,Any}(:project => project, :manifest => manifest, :versioninfo => verinfo)
     if !isnothing(repospec)
         meta[:repoinfo] = repometa(repospec)
     end
@@ -69,8 +65,7 @@ end
 
 function isuntracked(repo::GitRepo, path)
     status = LibGit2.status(repo, path)
-    status !== nothing && status &
-                          LibGit2.Consts.STATUS_WT_NEW == LibGit2.Consts.STATUS_WT_NEW
+    status !== nothing && status & LibGit2.Consts.STATUS_WT_NEW == LibGit2.Consts.STATUS_WT_NEW
 end
 
 function walkdirty(repo::GitRepo; untracked::Bool = false)
@@ -87,11 +82,9 @@ function walkdirty(repo::GitRepo; untracked::Bool = false)
         fullpath = realpath(joinpath(root, file))
         if !(fullpath in ignore)
             pathspec = relpath(fullpath, repodir)
-            if LibGit2.isdirty(repo, pathspec; cached = true) || LibGit2.isdirty(
-                repo,
-                pathspec;
-                cached = false,
-            ) || (untracked && isuntracked(repo, pathspec))
+            if LibGit2.isdirty(repo, pathspec; cached = true) ||
+               LibGit2.isdirty(repo, pathspec; cached = false) ||
+               (untracked && isuntracked(repo, pathspec))
                 push!(dirty, (relpath(fullpath, repodir), fullpath))
             end
         end

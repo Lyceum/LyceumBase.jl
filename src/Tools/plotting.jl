@@ -27,8 +27,8 @@ function expplot(
     maxpoints = typemax(Int),
 )
     isbad = any(lines) do l
-        any(v->isnan(v) || isinf(v), l.x)
-        any(v->isnan(v) || isinf(v), l.y)
+        any(v -> isnan(v) || isinf(v), l.x)
+        any(v -> isnan(v) || isinf(v), l.y)
     end
     isbad && throw(ArgumentError("NaN or Inf detected"))
 
@@ -47,10 +47,8 @@ function expplot(
 
     # shift/scale lines to fall into [-1, 1]
     if normalize
-        lines = map(
-            l -> Line(l.x, scaleandcenter!(copy(l.y), center = 0, range = 2), l.name),
-            lines,
-        )
+        lines =
+            map(l -> Line(l.x, scaleandcenter!(copy(l.y), center = 0, range = 2), l.name), lines)
     end
 
     ymin = round(minimum(l -> minimum(l.y), lines), digits = 2)

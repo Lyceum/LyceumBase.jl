@@ -14,7 +14,7 @@ function Experiment(
     copy_dirty = false,
     format::Symbol = :julia_serialize,
     compression::Symbol = :none,
-    strict = false
+    strict = false,
 )
     isdir(savepath) && throw(ArgumentError("$savepath is a directory"))
 
@@ -40,7 +40,7 @@ function Experiment(
         end
     end
 
-    meta = Dict{Symbol, Any}()
+    meta = Dict{Symbol,Any}()
     meta[:starttime] = string(now())
     meta[:versioninfo] = versionstring()
 
@@ -65,7 +65,7 @@ function finish!(exp::Experiment)
     if isfile(savepath)
         if exp.overwrite
             @info "$savepath exists. Deleting."
-            rm(savepath, force=true)
+            rm(savepath, force = true)
         else
             newpath = mkgoodpath(savepath)
             @warn "$savepath exists, using $newpath instead"
@@ -88,7 +88,7 @@ function _processrepos(paths, copy_dirty, strict)
             msg = "Duplicate repo $path detected"
             strict ? error(msg) : @warn msg
         elseif isrepo(path)
-            repos[path] = repometa(path, copy_dirty=copy_dirty)
+            repos[path] = repometa(path, copy_dirty = copy_dirty)
         elseif isfile(path) || isdir(path)
             msg = "expected a git repo but got $path. Copying instead."
             strict ? error(msg) : @warn msg
@@ -103,7 +103,7 @@ end
 
 function _processpaths(paths, strict)
     Pkg.PlatformEngines.probe_platform_engines!()
-    d = Dict{String, Any}()
+    d = Dict{String,Any}()
     for path in paths
         path = String(path)
         if haskey(d, path)
@@ -115,7 +115,7 @@ function _processpaths(paths, strict)
             tmp = tempname()
             try
                 run(Pkg.PlatformEngines.gen_package_cmd(path, tmp))
-                d[path] = (type="tar.gz", data=read(tmp))
+                d[path] = (type = "tar.gz", data = read(tmp))
             catch e
                 bt = catch_backtrace()
                 if strict
@@ -124,7 +124,7 @@ function _processpaths(paths, strict)
                     @error sprint(io -> showerror(io, e, bt))
                 end
             finally
-                rm(tmp, force=true)
+                rm(tmp, force = true)
             end
         else
             msg = "Skipping $path: does not exist"

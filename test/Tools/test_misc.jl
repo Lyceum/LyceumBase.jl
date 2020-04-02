@@ -12,21 +12,13 @@ let x = rand(100)
 end
 
 
-let X = Symmetric(zeros(100, 100)),
-    Y = rand(100, 10),
-    X2 = Symmetric(zeros(100, 100)),
-    Y2 = copy(Y)
-
+let X = Symmetric(zeros(100, 100)), Y = rand(100, 10), X2 = Symmetric(zeros(100, 100)), Y2 = copy(Y)
     BLAS.syrk!('U', 'N', 1.0, Y, 0.0, X.data)
     symmul!(X2, Y2, transpose(Y2), 1.0, 0.0)
     @test X == X2
 end
 
-let X = Symmetric(zeros(10, 10)),
-    Y = rand(100, 10),
-    X2 = Symmetric(zeros(10, 10)),
-    Y2 = copy(Y)
-
+let X = Symmetric(zeros(10, 10)), Y = rand(100, 10), X2 = Symmetric(zeros(10, 10)), Y2 = copy(Y)
     BLAS.syrk!('U', 'T', 1.0, Y, 0.0, X.data)
     symmul!(X2, transpose(Y2), Y2, 1.0, 0.0)
     @test X == X2
