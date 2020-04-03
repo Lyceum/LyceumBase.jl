@@ -710,9 +710,9 @@ version = "1.5.2"
 
 [[XML2_jll]]
 deps = ["Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
-git-tree-sha1 = "ed5603a695aefe3e9e404fc7b052e02cc72cfab6"
+git-tree-sha1 = "39a309feb51413d39bdf544cf2fd09357bae37d2"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.9.9+1"
+version = "2.9.9+2"
 
 [[ZMQ]]
 deps = ["FileWatching", "Sockets", "ZeroMQ_jll"]

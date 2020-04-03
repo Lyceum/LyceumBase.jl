@@ -1,5 +1,6 @@
 module LyceumBase
 
+using AutoHashEquals
 using Base: @propagate_inbounds
 using DocStringExtensions
 using LyceumCore
