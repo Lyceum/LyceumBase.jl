@@ -210,10 +210,10 @@ function rollout!(policy!::P, V::TrajectoryVector, env::AbstractEnvironment, Hma
         step!(env)
         done = isdone(st, ot, env)
     end
-
     V.len += 1
     getstate!(V.sT[length(V)], env)
     getobs!(V.oT[length(V)], env)
+    V.done[length(V)] = done
     V.offsets[length(V)+1] = V.offsets[length(V)] + t
 
     return V
@@ -230,7 +230,7 @@ end
 
 function collate!(
     V::T,
-    Bs::TupleN{T},
+    Bs::AbstractVector{T},
     env::AbstractEnvironment,
     ntimesteps::Integer,
 ) where {T<:TrajectoryVector}

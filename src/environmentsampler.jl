@@ -1,17 +1,17 @@
-struct EnvironmentSampler{N,E<:AbstractEnvironment,B<:TrajectoryVector}
-    environments::NTuple{N,E}
-    buffers::NTuple{N,B}
+struct EnvironmentSampler{E<:AbstractEnvironment,B<:TrajectoryVector}
+    environments::Vector{E}
+    buffers::Vector{B}
     function EnvironmentSampler(env_tconstructor)
-        N = Threads.nthreads()
-        envs = Tuple(env_tconstructor(N))
-        bufs = ntuple(_ -> TrajectoryVector(first(envs)), N)
-        new{N,eltype(envs),eltype(bufs)}(envs, bufs)
+        nt = Threads.nthreads()
+        envs = [env_tconstructor(nt)...]
+        bufs = [TrajectoryVector(first(envs)) for _=1:nt]
+        new{eltype(envs),eltype(bufs)}(envs, bufs)
     end
 end
 
 
 function sample(policy!, sampler::EnvironmentSampler, ntimesteps::Integer; kwargs...)
-    sample!(TrajectoryVector(first(sampler.envs)), policy!, sampler, ntimesteps; kwargs...)
+    sample!(TrajectoryVector(first(sampler.environments)), policy!, sampler, ntimesteps; kwargs...)
 end
 
 function sample!(
@@ -31,24 +31,13 @@ function sample!(
 
     foreach(empty!, sampler.buffers)
 
-    #if nthreads == 1
-    # short circuit
-    _sample(sampler, policy!, reset!, ntimesteps, Hmax)
-    #else
-    #    _threaded_sample(sampler, policy!, reset!, ntimesteps, Hmax)
-    #    #atomic_count = Threads.Atomic{Int}(0)
-    #    #@sync for _ = 1:nthreads
-    #    #    Threads.@spawn _threadsample!(
-    #    #        sampler,
-    #    #        policy!,
-    #    #        reset!,
-    #    #        ntimesteps,
-    #    #        Hmax,
-    #    #        atomic_count,
-    #    #    )
-    #    #end
-    #end
-    # TODO
+    if nthreads == 1
+        #short circuit
+        _sample(sampler, policy!, reset!, ntimesteps, Hmax)
+    else
+        _threaded_sample(sampler, policy!, reset!, ntimesteps, Hmax, nthreads)
+    end
+
     return collate!(τ, sampler.buffers, first(sampler.environments), ntimesteps)
 end
 
@@ -72,63 +61,65 @@ function _sample(
     return nothing
 end
 
-#function _threaded_sample(sampler::EnvironmentSampler{N2}, policy!, reset!, ntimesteps, Hmax) where {N2}
-#    @assert N2 > 1
-#    #N = N2 - 1
-#    N = 3
+function _threaded_sample(sampler::EnvironmentSampler, policy!, reset!, n, Hmax, nthreads)
+    ntraj_requested = [Atomic{Int}(0) for _ =1:nthreads-1]
+    alive = Atomic{Bool}(true)
+    ntimesteps_accumulated = 0
+    avg_horizon = Hmax
 
-#    #ntraj_requested = ntuple(_ -> Atomic{Int}(0), Val(N))
-#    ntraj_requested = [Atomic{Int}(0) for _ =1:N]
-#    alive = Atomic{Bool}(true)
-#    ntimesteps_accumulated = 0
-#    avg_horizon = Hmax
+    try
+        for tid = 1:nthreads-1
+            e = sampler.environments[tid]
+            b = sampler.buffers[tid]
+            req = ntraj_requested[tid]
+            Threads.@spawn _thread_worker(e, b, policy!, reset!, Hmax, req, alive)
+        end
 
-#    try
-#        for tid = 1:N
-#            # TODO spawnat?
-#            Threads.@spawn _thread_worker(sampler, policy!, reset!, Hmax, ntraj_requested[tid], alive)
-#        end
+        env = sampler.environments[end]
+        buf = sampler.buffers[end]
 
-#        while ntimesteps_accumulated < ntimesteps
-#            togo = ntimesteps - ntimesteps_accumulated
-#            @warn "AVGHORZION: $avg_horizon"
-#            estimated_ntraj_togo = trunc(Int, cld(togo, avg_horizon))
-#            @info "est: $estimated_ntraj_togo"
-#            ntraj_per_thread = map(length, splitrange(estimated_ntraj_togo, N))
-#            @info "per thread: $ntraj_per_thread"
-#            for tid = 1:length(ntraj_per_thread)
-#                atomic_add!(ntraj_requested[tid], ntraj_per_thread[tid])
-#            end
+        while ntimesteps_accumulated < n
+            togo = n - ntimesteps_accumulated
+            #@warn "AVGHORZION: $avg_horizon"
+            estimated_ntraj_togo = trunc(Int, cld(togo, avg_horizon))
+            #@info "est: $estimated_ntraj_togo"
+            ntraj_per_thread = map(length, splitrange(estimated_ntraj_togo, nthreads))
+            #@info "per thread: $ntraj_per_thread"
+            for tid = 1:length(ntraj_per_thread)-1
+                atomic_add!(ntraj_requested[tid], ntraj_per_thread[tid])
+            end
 
+            # Do my rollouts here
+            for _=1:ntraj_per_thread[end]
+                reset!(env)
+                rollout!(policy!, buf, env, Hmax)
+            end
 
-#            # Do my rollouts here
+            while any(req -> req[] > 0, ntraj_requested)
+                #@info "wait: $(map(x -> x[], ntraj_requested))"
+                #sleep(0.2)
+            end
 
-#            while any(req -> req[] > 0, ntraj_requested)
-#                @info "wait: $ntraj_requested"
-#                sleep(0.5)
-#            end
+            #@info "WOAH"
+            #@info "lengths: $(map(length, sampler.buffers))"
+            ntimesteps_accumulated = sum(ntimesteps, sampler.buffers)
+            avg_horizon = ntimesteps_accumulated / sum(length, sampler.buffers)
+        end
+    finally
+        alive[] = false
+    end
+end
 
-#            @info "lengths: $(map(length, sampler.buffers))"
-#            ntimesteps_accumulated = sum(length, sampler.buffers)
-#            avg_horizon = ntimesteps_accumulated / sum(ntrajectories, sampler.buffers)
-#        end
-#    finally
-#        alive[] = false
-#    end
-#end
-
-#function _thread_worker(sampler, policy!, reset!, Hmax, ntraj_requested::Atomic{Int}, alive::Atomic{Bool})
-#    tid = Threads.threadid()
-#    env = sampler.environments[tid]
-#    buf = sampler.buffers[tid]
-#    while alive[]
-#        req = ntraj_requested[]
-#        @info "Thread $tid doing $req"
-#        for _=1:req
-#            _sample_trajectory!(buf, env, policy!, reset!, Hmax)
-#        end
-#        @info "Thread $tid done $req $ntraj_requested"
-#        atomic_sub!(ntraj_requested, req)
-#        sleep(0.2)
-#    end
-#end
+function _thread_worker(env, buf, policy!, reset!, Hmax, ntraj_requested::Atomic{Int}, alive::Atomic{Bool})
+    tid = Threads.threadid()
+    while alive[]
+        req = ntraj_requested[]
+        for _=1:req
+            reset!(env)
+            rollout!(policy!, buf, env, Hmax)
+        end
+        #@info "Thread $tid done $req $ntraj_requested"
+        atomic_sub!(ntraj_requested, req)
+        #sleep(0.002)
+    end
+end

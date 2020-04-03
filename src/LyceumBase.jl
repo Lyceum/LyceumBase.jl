@@ -13,6 +13,7 @@ using SpecialArrays
 using SpecialArrays: True, False
 
 using Shapes
+using Base.Threads: Atomic, atomic_add!, atomic_sub!
 using UnsafeArrays
 
 
@@ -59,7 +60,7 @@ include("abstractenvironment.jl")
 export Trajectory, TrajectoryVector
 include("trajectory.jl")
 
-export EnvironmentSampler
+export EnvironmentSampler, sample, sample!
 include("environmentsampler.jl")
 
 
