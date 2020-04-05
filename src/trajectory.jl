@@ -1,3 +1,7 @@
+####
+#### Trajectory
+####
+
 @auto_hash_equals struct Trajectory{SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec,ST,OT}
     S::SS
     O::OO
@@ -27,8 +31,11 @@ end
 Base.length(τ::Trajectory) = (_check_consistency(τ); length(τ.A))
 
 
+####
+#### TrajectoryBuffer
+####
 
-mutable struct TrajectoryVector{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec,ST,OT} <: AbsVec{T}
+mutable struct TrajectoryBuffer{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec,ST,OT} <: AbsVec{T}
     S::SS
     O::OO
     A::AA
@@ -38,7 +45,7 @@ mutable struct TrajectoryVector{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,R
     done::Vector{Bool}
     offsets::Vector{Int}
     len::Int
-    @inline function TrajectoryVector{T,SS,OO,AA,RR,ST,OT}(
+    @inline function TrajectoryBuffer{T,SS,OO,AA,RR,ST,OT}(
         S,
         O,
         A,
@@ -49,13 +56,13 @@ mutable struct TrajectoryVector{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,R
         offsets,
         len,
     ) where {T,SS,OO,AA,RR,ST,OT}
-        V = new(S, O, A, R, sT, oT, done, offsets, len)
-        _check_consistency(V)
-        return V
+        B = new(S, O, A, R, sT, oT, done, offsets, len)
+        _check_consistency(B)
+        return B
     end
 end
 
-@inline function TrajectoryVector(
+@inline function TrajectoryBuffer(
     S::SS,
     O::OO,
     A::AA,
@@ -68,12 +75,12 @@ end
 ) where {SS,OO,AA,RR,ST,OT}
     I = 1:1
     T = Trajectory{_getindextype(S, I),_getindextype(O, I),_getindextype(A, I),_getindextype(R, I)}
-    TrajectoryVector{T,SS,OO,AA,RR,ST,OT}(S, O, A, R, sT, oT, done, offsets, len)
+    TrajectoryBuffer{T,SS,OO,AA,RR,ST,OT}(S, O, A, R, sT, oT, done, offsets, len)
 end
 
-function TrajectoryVector(env::AbstractEnvironment; sizehint::Integer = 1024)
+function TrajectoryBuffer(env::AbstractEnvironment; sizehint::Integer = 1024)
     sizehint > 0 || throw(ArgumentError("sizehint must be ≥ 0"))
-    TrajectoryVector(
+    TrajectoryBuffer(
         asvec(ElasticArray(undef, statespace(env), sizehint)),
         asvec(ElasticArray(undef, obsspace(env), sizehint)),
         asvec(ElasticArray(undef, actionspace(env), sizehint)),
@@ -86,112 +93,113 @@ function TrajectoryVector(env::AbstractEnvironment; sizehint::Integer = 1024)
     )
 end
 
-@inline function _check_consistency(V::TrajectoryVector)
-    if !(length(V.S) == length(V.O) == length(V.A) == length(V.R))
+@inline function _check_consistency(B::TrajectoryBuffer)
+    if !(length(B.S) == length(B.O) == length(B.A) == length(B.R))
         throw(DimensionMismatch("Lengths of S, O, A, and R do not match"))
     end
-    if !(length(V.sT) == length(V.oT) == length(V.done))
+    if !(length(B.sT) == length(B.oT) == length(B.done))
         throw(DimensionMismatch("Lengths of sT, oT, and done do not match"))
     end
-    length(V.S) < ntimesteps(V) && error("invalid dimensions")
-    if !(V.offsets[1] == 0 && all(i -> V.offsets[i-1] < V.offsets[i], 2:length(V)))
+    length(B.S) < nsamples(B) && error("invalid dimensions")
+    if !(B.offsets[1] == 0 && all(i -> B.offsets[i-1] < B.offsets[i], 2:length(B)))
         throw(DimensionMismatch("Invalid offsets"))
     end
-    length(V) < 0 && throw(DomainError("length must be > 0"))
-    return V
+    length(B) < 0 && throw(DomainError("length must be > 0"))
+    return B
 end
 
 
-@inline Base.length(V::TrajectoryVector) = V.len
+@inline Base.length(B::TrajectoryBuffer) = B.len
 
-@inline Base.size(V::TrajectoryVector) = (length(V),)
+@inline Base.size(B::TrajectoryBuffer) = (length(B),)
 
-@propagate_inbounds function Base.getindex(V::TrajectoryVector, i::Int)
-    from, to = V.offsets[i] + 1, V.offsets[i + 1]
+@propagate_inbounds function Base.getindex(B::TrajectoryBuffer, i::Int)
+    from, to = B.offsets[i] + 1, B.offsets[i + 1]
     range = from:to
-    Trajectory(V.S[range], V.O[range], V.A[range], V.R[range], V.sT[i], V.oT[i], V.done[i])
+    Trajectory(B.S[range], B.O[range], B.A[range], B.R[range], B.sT[i], B.oT[i], B.done[i])
 end
 
-Base.IndexStyle(::Type{<:TrajectoryVector}) = IndexLinear()
+Base.IndexStyle(::Type{<:TrajectoryBuffer}) = IndexLinear()
 
-Base.empty!(V::TrajectoryVector) = V.len = 0
+Base.empty!(B::TrajectoryBuffer) = B.len = 0
 
 # TODO HasLength/HasShape
-function Base.append!(V::TrajectoryVector, iter)
-    offset = V.offsets[length(V) + 1]
-    _sizehint!(V, ntimesteps(V) + sum(length, iter), length(V) + length(iter))
+function Base.append!(B::TrajectoryBuffer, iter)
+    offset = B.offsets[length(B) + 1]
+    _sizehint!(B, nsamples(B) + sum(length, iter), length(B) + length(iter))
 
     for τ::Trajectory in iter
-        V.len += 1
+        B.len += 1
         len_τ = length(τ)
 
-        copyto!(V.S, offset + firstindex(V.S), τ.S, firstindex(τ.S), len_τ)
-        copyto!(V.O, offset + firstindex(V.O), τ.O, firstindex(τ.O), len_τ)
-        copyto!(V.A, offset + firstindex(V.A), τ.A, firstindex(τ.A), len_τ)
-        copyto!(V.R, offset + firstindex(V.R), τ.R, firstindex(τ.R), len_τ)
-        V.sT[length(V)] = τ.sT
-        V.oT[length(V)] = τ.oT
-        V.done[length(V)] = τ.done
-        V.offsets[length(V) + 1] = offset + len_τ
+        copyto!(B.S, offset + firstindex(B.S), τ.S, firstindex(τ.S), len_τ)
+        copyto!(B.O, offset + firstindex(B.O), τ.O, firstindex(τ.O), len_τ)
+        copyto!(B.A, offset + firstindex(B.A), τ.A, firstindex(τ.A), len_τ)
+        copyto!(B.R, offset + firstindex(B.R), τ.R, firstindex(τ.R), len_τ)
+        B.sT[length(B)] = τ.sT
+        B.oT[length(B)] = τ.oT
+        B.done[length(B)] = τ.done
+        B.offsets[length(B) + 1] = offset + len_τ
 
         offset += len_τ
     end
-    _check_consistency(V)
-    return V
+
+    _check_consistency(B)
+    return B
 end
 
-function finish!(V::TrajectoryVector)
-    resize!(V.S, ntimesteps(V))
-    resize!(V.O, ntimesteps(V))
-    resize!(V.A, ntimesteps(V))
-    resize!(V.R, ntimesteps(V))
-    resize!(V.sT, length(V))
-    resize!(V.oT, length(V))
-    resize!(V.done, length(V))
-    resize!(V.offsets, length(V) + 1)
-    return V
+function truncate!(B::TrajectoryBuffer)
+    resize!(B.S, nsamples(B))
+    resize!(B.O, nsamples(B))
+    resize!(B.A, nsamples(B))
+    resize!(B.R, nsamples(B))
+    resize!(B.sT, length(B))
+    resize!(B.oT, length(B))
+    resize!(B.done, length(B))
+    resize!(B.offsets, length(B) + 1)
+    return B
 end
 
-function _resize!(V::TrajectoryVector, ntimesteps::Int, ntrajectories::Int)
-    resize!(V.S, ntimesteps)
-    resize!(V.O, ntimesteps)
-    resize!(V.A, ntimesteps)
-    resize!(V.R, ntimesteps)
-    resize!(V.sT, ntrajectories)
-    resize!(V.oT, ntrajectories)
-    resize!(V.done, ntrajectories)
-    resize!(V.offsets, ntrajectories + 1)
-    _check_consistency(V)
-    return V
+function _resize!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
+    resize!(B.S, nsamples)
+    resize!(B.O, nsamples)
+    resize!(B.A, nsamples)
+    resize!(B.R, nsamples)
+    resize!(B.sT, ntrajectories)
+    resize!(B.oT, ntrajectories)
+    resize!(B.done, ntrajectories)
+    resize!(B.offsets, ntrajectories + 1)
+    _check_consistency(B)
+    return B
 end
 
-function _sizehint!(V::TrajectoryVector, ntimesteps::Int, ntrajectories::Int)
-    _check_consistency(V)
-    if length(V.S) < ntimesteps
-        l = nextpow(2, ntimesteps)
-        resize!(V.S, l)
-        resize!(V.O, l)
-        resize!(V.A, l)
-        resize!(V.R, l)
+function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
+    _check_consistency(B)
+    if length(B.S) < nsamples
+        l = nextpow(2, nsamples)
+        resize!(B.S, l)
+        resize!(B.O, l)
+        resize!(B.A, l)
+        resize!(B.R, l)
     end
-    if length(V.offsets) < ntrajectories + 1
-        l = nextpow(2, ntrajectories + 1)
-        resize!(V.sT, l)
-        resize!(V.oT, l)
-        resize!(V.done, l)
-        resize!(V.offsets, l)
+    if length(B.offsets) < ntrajectories + 2
+        l = nextpow(2, ntrajectories + 2)
+        resize!(B.sT, l)
+        resize!(B.oT, l)
+        resize!(B.done, l)
+        resize!(B.offsets, l)
     end
-    return V
+    return B
 end
 
-@inline ntimesteps(V::TrajectoryVector) = V.offsets[length(V) + 1]
+@inline nsamples(B::TrajectoryBuffer) = B.offsets[length(B) + 1]
 
-function rollout!(policy!::P, V::TrajectoryVector, env::AbstractEnvironment, Hmax::Int) where {P}
+function rollout!(policy!::P, B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Integer) where {P}
     Hmax > 0 || throw(ArgumentError("Hmax must be > 0"))
 
-    _sizehint!(V, ntimesteps(V) + Hmax, length(V) + 1)
-    offset = V.offsets[length(V) + 1]
-    @unpack S, O, A, R = V
+    _sizehint!(B, nsamples(B) + Hmax, length(B) + 1)
+    offset = B.offsets[length(B) + 1]
+    @unpack S, O, A, R = B
 
     t::Int = 0
     done::Bool = false
@@ -210,36 +218,31 @@ function rollout!(policy!::P, V::TrajectoryVector, env::AbstractEnvironment, Hma
         step!(env)
         done = isdone(st, ot, env)
     end
-    V.len += 1
-    getstate!(V.sT[length(V)], env)
-    getobs!(V.oT[length(V)], env)
-    V.done[length(V)] = done
-    V.offsets[length(V)+1] = V.offsets[length(V)] + t
+    B.len += 1
+    getstate!(B.sT[length(B)], env)
+    getobs!(B.oT[length(B)], env)
+    B.done[length(B)] = done
+    B.offsets[length(B)+1] = B.offsets[length(B)] + t
 
-    return V
+    return B
 end
 
 
-function collate(
-    Bs::TupleN{T},
-    env::AbstractEnvironment,
-    ntimesteps::Integer,
-) where {T<:TrajectoryVector}
-    collate!(TrajectoryVector(env), Bs, env, ntimesteps)
+function collate(Bs::AbsVec{T}, env::AbstractEnvironment, nsamples::Integer) where {T<:TrajectoryBuffer}
+    collate!(TrajectoryBuffer(env), Bs, nsamples)
 end
 
 function collate!(
-    V::T,
-    Bs::AbstractVector{T},
-    env::AbstractEnvironment,
-    ntimesteps::Integer,
-) where {T<:TrajectoryVector}
-    _sizehint!(V, ntimesteps, sum(length, Bs))
-    togo = ntimesteps
+    dest::T,
+    Bs::AbsVec{T},
+    nsamples::Integer,
+) where {T<:TrajectoryBuffer}
+    _sizehint!(dest, nsamples, sum(length, Bs))
+    togo = nsamples
     for B in Bs, τ in B
         if togo < length(τ)
             push!(
-                V,
+                dest,
                 Trajectory(
                     view(τ.S, 1:togo),
                     view(τ.O, 1:togo),
@@ -252,16 +255,14 @@ function collate!(
             )
             break
         else
-            push!(V, τ)
+            push!(dest, τ)
         end
         togo -= length(τ)
     end
 
-    return V
+    return dest
 end
 
-
-#### TODO
 
 function asvec(A::AbsArr{<:Any,L}) where {L}
     alongs = (ntuple(_ -> True(), Val(L - 1))..., False())

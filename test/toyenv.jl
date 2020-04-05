@@ -48,6 +48,5 @@ LyceumBase.timestep(e::ToyEnv) = e.dt
 
 function busyloop(dt::Real)
     t0 = time()
-    while time() - t0 < dt
-    end
+    while time() - t0 < dt end
 end
