@@ -1,11 +1,23 @@
 module LyceumBase
 
 using AutoHashEquals
+
 using Base: @propagate_inbounds
+using Base.Threads: Atomic, atomic_add!, atomic_sub!
+
+using Dates
 using DocStringExtensions
+using Distributions: Sampleable
+using Future: randjump
+using InteractiveUtils
+using JLSO
+using LinearAlgebra
+using LibGit2
+using Logging
 using LyceumCore
 using MacroTools
 using Parameters
+using Pkg
 using Random
 using Reexport
 
@@ -13,8 +25,11 @@ using SpecialArrays
 using SpecialArrays: True, False
 
 using Shapes
-using Base.Threads: Atomic, atomic_add!, atomic_sub!
+using StaticArrays
+using UnicodePlots: UnicodePlots
+using UniversalLogger
 using UnsafeArrays
+import UniversalLogger: finish!
 
 
 include("util.jl")
@@ -22,6 +37,15 @@ include("util.jl")
 include("setfield.jl")
 @reexport using .SetfieldImpl
 
+export Converged, scaleandcenter!, symmul!, wraptopi
+export perturb!, perturbn!, perturb, perturbn
+include("math.jl")
+
+export seed_threadrngs!, threadrngs, getrange, splitrange, nblasthreads, @with_blasthreads
+include("threading.jl")
+
+export SPoint3D, MPoint3D
+include("geometry.jl")
 
 ####
 #### Interfaces
@@ -51,6 +75,7 @@ export step!, isdone, timestep
 export spaces
 include("abstractenvironment.jl")
 
+
 ####
 #### Tools
 ####
@@ -61,14 +86,12 @@ include("trajectory.jl")
 export EnvironmentSampler, sample, sample!
 include("environmentsampler.jl")
 
+include("projectmeta.jl")
 
-####
-#### Submodules
-####
+export Line, expplot
+include("plotting.jl")
 
-# TODO remove
-export Tools
-include("Tools/Tools.jl")
-using .Tools
+export Experiment, finish!
+include("experiment.jl")
 
 end # module

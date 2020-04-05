@@ -148,3 +148,27 @@ function _handlecollision(x::JLSOFile, k::Symbol)
     end
     k
 end
+
+function mkgoodpath(filepath::String; force::Bool = false, sep = '_')
+    isdir(filepath) && throw(ArgumentError("$filepath is a directory"))
+
+    if isfile(filepath)
+        if force
+            rm(filepath)
+            return filepath
+        else
+            val = 1
+            dir, file = splitdir(filepath)
+            file, ext = splitext(file)
+            f() = joinpath(dir, "$(file)$(sep)$(val)$(ext)")
+            newpath = f()
+            while isfile(newpath)
+                val += 1
+                newpath = f()
+            end
+            return newpath
+        end
+    else
+        return filepath
+    end
+end

@@ -12,6 +12,5 @@ using Test
 using UnsafeArrays
 
 using LyceumBase
-using LyceumBase.Tools
 
 include("util.jl")

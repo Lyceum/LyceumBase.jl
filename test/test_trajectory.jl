@@ -87,7 +87,7 @@ end
     e = ToyEnv()
 
     let
-        Vs = (TrajectoryBuffer(e), TrajectoryBuffer(e), TrajectoryBuffer(e))
+        Vs = [TrajectoryBuffer(e), TrajectoryBuffer(e), TrajectoryBuffer(e)]
         τs = makedata(e, [2, 3, 4])
         for (B, τ) in zip(Vs, τs)
             push!(B, τ)
@@ -99,7 +99,7 @@ end
     end
 
     let
-        Vs = (TrajectoryBuffer(e), TrajectoryBuffer(e), TrajectoryBuffer(e))
+        Vs = [TrajectoryBuffer(e), TrajectoryBuffer(e), TrajectoryBuffer(e)]
         τs = makedata(e, [2, 3, 4]; isdone = i -> true)
         for (B, τ) in zip(Vs, τs)
             push!(B, τ)

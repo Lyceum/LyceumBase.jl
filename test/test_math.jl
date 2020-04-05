@@ -1,6 +1,6 @@
-module TestMisc
+module TestMath
 
-include("../preamble.jl")
+include("preamble.jl")
 
 let x = rand(100)
     x[1] = 0

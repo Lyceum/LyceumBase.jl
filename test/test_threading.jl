@@ -1,6 +1,6 @@
 module TestThreading
 
-include("../preamble.jl")
+include("preamble.jl")
 
 @testset "splitrange/getrange" begin
     let N = 16, np = 4

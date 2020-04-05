@@ -1,6 +1,6 @@
 module TestGeom
 
-include("../preamble.jl")
+include("preamble.jl")
 
 @testset "SPoint3D" begin
     @test_throws ArgumentError SPoint3D(rand(4, 10), 3)
