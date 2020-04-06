@@ -26,9 +26,9 @@ version = "3.5.0+3"
 
 [[ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "bc779df8d73be70e4e05a63727d3a4dfb4c52b1f"
+git-tree-sha1 = "f8904599065b57f51715faf6278126f853aef6fc"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "0.1.5"
+version = "0.2.4"
 
 [[AssetRegistry]]
 deps = ["Distributed", "JSON", "Pidfile", "SHA", "Test"]
@@ -80,10 +80,10 @@ uuid = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
 version = "2.2.0"
 
 [[CodecZlib]]
-deps = ["BinaryProvider", "Libdl", "TranscodingStreams"]
-git-tree-sha1 = "05916673a2627dd91b4969ff8ba6941bc85a960e"
+deps = ["TranscodingStreams", "Zlib_jll"]
+git-tree-sha1 = "ded953804d019afa9a3f98981d99b33e3db7b6da"
 uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
-version = "0.6.0"
+version = "0.7.0"
 
 [[CommonSubexpressions]]
 deps = ["Test"]
@@ -99,9 +99,9 @@ version = "3.8.0"
 
 [[CompilerSupportLibraries_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "ff8101d6736414bc93c0f8df77b1e4095ca988c3"
+git-tree-sha1 = "7c4f882c41faa72118841185afc58a2eb00ef612"
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "0.3.2+0"
+version = "0.3.3+0"
 
 [[ConstructionBase]]
 git-tree-sha1 = "a2a6a5fea4d6f730ec4c18a76d27ec10e8ec1c50"
@@ -120,9 +120,9 @@ version = "1.1.0"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "5a431d46abf2ef2a4d5d00bd0ae61f651cf854c8"
+git-tree-sha1 = "73eb18320fe3ba58790c8b8f6f89420f0a622773"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.17.10"
+version = "0.17.11"
 
 [[DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -186,18 +186,6 @@ git-tree-sha1 = "0fa3b52a04a4e210aeb1626def9c90df3ae65268"
 uuid = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
 version = "1.1.0"
 
-[[FFTW]]
-deps = ["AbstractFFTs", "FFTW_jll", "IntelOpenMP_jll", "Libdl", "LinearAlgebra", "MKL_jll", "Reexport"]
-git-tree-sha1 = "109d82fa4b00429f9afcce873e9f746f11f018d3"
-uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "1.2.0"
-
-[[FFTW_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "6c975cd606128d45d1df432fb812d6eb10fee00b"
-uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
-version = "3.3.9+5"
-
 [[FilePathsBase]]
 deps = ["Dates", "LinearAlgebra", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "923fd3b942a11712435682eaa95cc8518c428b2c"
@@ -209,9 +197,9 @@ uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays"]
-git-tree-sha1 = "3eb5253af6186eada40de3df524a1c10f0c6bfa2"
+git-tree-sha1 = "51cc2f9bc4eb9c6c0e81ec2f779d1085583cc956"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.8.6"
+version = "0.8.7"
 
 [[ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "NaNMath", "Random", "SpecialFunctions", "StaticArrays"]
@@ -264,12 +252,6 @@ git-tree-sha1 = "ef18588a15dcd6aff37a09108d7b3754093d73be"
 uuid = "22cec73e-a1b8-11e9-2c92-598750a2cf9c"
 version = "0.2.2"
 
-[[IntelOpenMP_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "fb8e1c7a5594ba56f9011310790e03b5384998d6"
-uuid = "1d5cc7b8-4909-519e-a0f8-d0f5ad9712d0"
-version = "2018.0.3+0"
-
 [[InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -292,9 +274,9 @@ version = "1.0.0"
 
 [[JLSO]]
 deps = ["BSON", "CodecZlib", "FilePathsBase", "Memento", "Pkg", "Serialization"]
-git-tree-sha1 = "ef6164da5b2cad11c0bd8282cc0f029622bc057d"
+git-tree-sha1 = "250ffc4f6e9c7c38f5e96fe45218ea77ec50635d"
 uuid = "9da8a3cd-07a3-59c0-a743-3fdc52c30d11"
-version = "2.2.0"
+version = "2.3.1"
 
 [[JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -341,32 +323,22 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[LyceumBase]]
-deps = ["Adapt", "Dates", "ElasticArrays", "EllipsisNotation", "Future", "InteractiveUtils", "JLSO", "LibGit2", "LinearAlgebra", "Logging", "MacroTools", "Parameters", "Pkg", "Random", "Shapes", "StaticArrays", "Statistics", "UnicodePlots", "UniversalLogger", "UnsafeArrays"]
-git-tree-sha1 = "453499625deeeeac95f07a695dcede8c53f3d810"
+deps = ["Adapt", "BangBang", "BenchmarkTools", "Dates", "Distributions", "DocStringExtensions", "ElasticArrays", "EllipsisNotation", "Future", "InteractiveUtils", "JLSO", "LibGit2", "LinearAlgebra", "Logging", "MacroTools", "Parameters", "Pkg", "Random", "Reexport", "Setfield", "Shapes", "StaticArrays", "Statistics", "Test", "TimeZones", "UnicodePlots", "UniversalLogger", "UnsafeArrays"]
+git-tree-sha1 = "680cdfbe11f9b029c65f36932fec66d40238b9bd"
 uuid = "db31fed1-ca1e-4084-8a49-12fae1996a55"
-version = "0.1.0"
+version = "0.2.1"
 
 [[LyceumCore]]
 deps = ["StaticNumbers"]
-git-tree-sha1 = "2ce45d30ca36dda08f0a189c9eeb90d8a50ecc68"
-repo-rev = "master"
-repo-url = "https://github.com/Lyceum/LyceumCore.jl.git"
+git-tree-sha1 = "28ace31199a3f42d6f0257921710babc95cbe306"
 uuid = "e5bd5517-2193-49f0-ba9c-d5a8508cb639"
-version = "0.1.0"
+version = "0.1.1"
 
 [[LyceumDevTools]]
-deps = ["Base64", "BenchmarkTools", "Dates", "Distributed", "GitHub", "HTTP", "JuliaFormatter", "LibGit2", "LyceumBase", "MacroTools", "Markdown", "Parameters", "Pkg", "PkgTemplates", "Random", "Reexport", "Registrator", "RegistryTools", "Requires", "Shapes", "Test"]
-git-tree-sha1 = "42b5fac7967884767870514561878dcc01d2ed87"
-repo-rev = "master"
-repo-url = "https://github.com/Lyceum/LyceumDevTools.jl.git"
+deps = ["Base64", "BenchmarkTools", "Dates", "Distributed", "GitHub", "HTTP", "JuliaFormatter", "LibGit2", "LyceumBase", "LyceumCore", "MacroTools", "Markdown", "Parameters", "Pkg", "PkgTemplates", "Random", "Reexport", "Registrator", "RegistryTools", "Shapes", "Test"]
+git-tree-sha1 = "20284289af8b3ca458b9b1c50e74a00a79fb3059"
 uuid = "fd23256c-5a67-41c4-8f5a-c8cf5526e505"
-version = "0.3.1"
-
-[[MKL_jll]]
-deps = ["IntelOpenMP_jll", "Libdl", "Pkg"]
-git-tree-sha1 = "720629cc8cbd12c146ca01b661fd1a6cf66e2ff4"
-uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
-version = "2019.0.117+2"
+version = "0.3.2"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -386,9 +358,9 @@ version = "0.7.0"
 
 [[Memento]]
 deps = ["Dates", "Distributed", "JSON", "Serialization", "Sockets", "Syslogs", "Test", "TimeZones", "UUIDs"]
-git-tree-sha1 = "090463b13da88689e5eae6468a6f531a21392175"
+git-tree-sha1 = "5b0f65a76a45d1e9a28f56c5c82743e4d0eecbe9"
 uuid = "f28f55f0-a522-5efc-85c2-fe41dfb9b2d9"
-version = "0.12.1"
+version = "1.0.0"
 
 [[Missings]]
 deps = ["DataAPI"]
@@ -460,9 +432,9 @@ version = "0.12.0"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "d6d82d5bdbb75048e574cd2d2c89dfbf2c74250c"
+git-tree-sha1 = "75d07cb840c300084634b4991761886d0d762724"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "1.0.0"
+version = "1.0.1"
 
 [[Pidfile]]
 deps = ["FileWatching", "Test"]
@@ -522,9 +494,9 @@ version = "1.1.0"
 
 [[RegistryTools]]
 deps = ["AutoHashEquals", "LibGit2", "Pkg", "UUIDs"]
-git-tree-sha1 = "14873d5a5c36b53897b47e64d123e363176f6cde"
+git-tree-sha1 = "94cf95fd962cc0594da4d676ed66b553f84ec246"
 uuid = "d1eb7eb1-105f-429d-abf5-b0f65cb9e2c4"
-version = "1.3.3"
+version = "1.3.4"
 
 [[Requires]]
 deps = ["UUIDs"]
@@ -558,11 +530,9 @@ version = "0.6.0"
 
 [[Shapes]]
 deps = ["Adapt", "MacroTools", "Random", "Requires", "StaticArrays", "UnsafeArrays"]
-git-tree-sha1 = "5e5dc17ca436fe3c2a4c5ffe2eca632c6154b1c8"
-repo-rev = "master"
-repo-url = "https://github.com/Lyceum/Shapes.jl.git"
+git-tree-sha1 = "aea02f3760bfabce446ee71bf0902348ae30f471"
 uuid = "175de200-b73b-11e9-28b7-9b5b306cec37"
-version = "0.2.0"
+version = "0.2.1"
 
 [[SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
@@ -583,9 +553,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialArrays]]
 deps = ["Adapt", "DocStringExtensions", "LyceumCore", "LyceumDevTools", "MacroTools", "Requires", "Shapes", "StaticNumbers", "UnsafeArrays", "Zygote"]
-git-tree-sha1 = "65ec05574c115f1b269f69306ef3b49de36e8550"
+git-tree-sha1 = "c2fb9f47d757c0e76b529eca454fc8d2adb28316"
 uuid = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
-version = "0.1.0"
+version = "0.1.1"
 
 [[SpecialFunctions]]
 deps = ["OpenSpecFun_jll"]
@@ -691,9 +661,7 @@ version = "1.2.0"
 
 [[UniversalLogger]]
 deps = ["Logging", "PushVectors"]
-git-tree-sha1 = "d9433c480dd7e64c7f042cf2bfdd63e8f1d99be9"
-repo-rev = "master"
-repo-url = "https://github.com/Lyceum/UniversalLogger.jl.git"
+git-tree-sha1 = "ae1a73e7681e27bc37d8d9db21af73d7cf4518fd"
 uuid = "5c5e3362-9445-4819-9f95-51c44c51adeb"
 version = "0.2.0"
 
@@ -733,10 +701,10 @@ uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
 version = "1.2.11+9"
 
 [[Zygote]]
-deps = ["ArrayLayouts", "DiffRules", "FFTW", "FillArrays", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "9688fce24bd8a9468fed12f3d5206099a39054dc"
+deps = ["AbstractFFTs", "ArrayLayouts", "DiffRules", "FillArrays", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
+git-tree-sha1 = "1ccbfbe8930376e31752b812daa2532c723dc332"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.4.12"
+version = "0.4.13"
 
 [[ZygoteRules]]
 deps = ["MacroTools"]
