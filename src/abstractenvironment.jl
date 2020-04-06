@@ -1,134 +1,125 @@
 """
-    AbstractEnvironment
+    $(TYPEDEF)
 
-Supertype for all environments.
+Supertype for all Lyceum environments.
 """
 abstract type AbstractEnvironment end
 
-const EnvSpaces = NamedTuple{(:statespace, :obsspace, :actionspace, :rewardspace)}
-
 
 """
-    statespace(env::AbstractEnvironment) --> Shapes.AbstractShape
+    $(TYPEDSIGNATURES)
 
-Returns a subtype of `Shapes.AbstractShape` describing the state space of `env`.
+Return a subtype of `Shapes.AbstractShape` describing the state space of `env`.
 
-See also: [`getstate!`](@ref), [`setstate!`](@ref), [`getstate`](@ref).
+See also: [`getstate!`](@ref), [`getstate`](@ref), [`setstate!`](@ref).
 """
 @mustimplement statespace(env::AbstractEnvironment)
 
 """
-    getstate!(state, env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Store the current state of `env` in `state`, where `state` conforms to the state space
-returned by `statespace(env)`.
+Store the current state of `env` in `s`.
 
-See also: [`statespace`](@ref), [`setstate!`](@ref), [`getstate`](@ref).
+See also: [`statespace`](@ref), [`getstate`](@ref), [`setstate!`](@ref).
 """
-@mustimplement getstate!(state, env::AbstractEnvironment)
+@mustimplement getstate!(s, env::AbstractEnvironment)
 
 """
-    getstate(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Get the current state of `env`. The returned value will be an object
-conforming to the state space returned by `statespace(env)`.
+Get the current state of `env`.
 
 See also: [`statespace`](@ref), [`getstate!`](@ref), [`setstate!`](@ref).
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should implement
-    [`statespace`](@ref) and [`getstate!`](@ref), which are used internally by `getstate`.
+    Implementers of `AbstractEnvironment` subtypes should implement [`statespace`](@ref) and
+    [`getstate!`](@ref), which are used internally by `getstate`.
 """
 @propagate_inbounds function getstate(env::AbstractEnvironment)
     s = allocate(statespace(env))
     getstate!(s, env)
-    s
+    return s
 end
 
 """
-    setstate!(env::AbstractEnvironment, state)
+    $(TYPEDSIGNATURES)
 
-Set the state of `env` to `state`, where `state` conforms to the state space returned
-by `statespace(env)`.
+Set the current state of `env` to `s`.
 
 See also: [`statespace`](@ref), [`getstate!`](@ref), [`getstate`](@ref).
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes must guarantee that calls to
+    Implementers of `AbstractEnvironment` subtypes must guarantee that calls to
     other "getter" functions (e.g. `getreward`) after a call to `setstate!` reflect the
-    new, passed-in state.
+    new state `s`.
 """
-@mustimplement setstate!(env::AbstractEnvironment, state)
+@mustimplement setstate!(env::AbstractEnvironment, s)
 
-
-"""
-    obsspace(env::AbstractEnvironment) --> Shapes.AbstractShape
-
-Returns a subtype of `Shapes.AbstractShape` describing the observation space of `env`.
-
-See also: [`getobs!`](@ref), [`getobs`](@ref).
-"""
-@mustimplement obsspace(env::AbstractEnvironment)
 
 """
-    getobs!(obs, env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Store the current observation of `env` in `obs`, where `obs` conforms to the
-observation space returned by `obsspace(env)`.
+Return a subtype of `Shapes.AbstractShape` describing the observation space of `env`.
 
-See also: [`obsspace`](@ref), [`getobs`](@ref).
+See also: [`getobservation!`](@ref), [`getobservation`](@ref).
 """
-@mustimplement getobs!(obs, env::AbstractEnvironment)
+@mustimplement observationspace(env::AbstractEnvironment)
 
 """
-    getobs(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Get the current observation of `env`. The returned value will be an object
-conforming to the observation space returned by `obsspace(env)`.
+Store the current observation of `env` in `o`.
 
-See also: [`obsspace`](@ref), [`getobs!`](@ref).
+See also: [`observationspace`](@ref), [`getobservation`](@ref).
+"""
+@mustimplement getobservation!(o, env::AbstractEnvironment)
+
+"""
+    $(TYPEDSIGNATURES)
+
+Get the current observation of `env`.
+
+See also: [`observationspace`](@ref), [`getobservation!`](@ref).
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should implement
-    [`obsspace`](@ref) and [`getobs!`](@ref), which are used internally by `getobs`.
+    Implementers of `AbstractEnvironment` subtypes should implement [`observationspace`](@ref) and
+    [`getobservation!`](@ref), which are used internally by `getobservation`.
 """
-@propagate_inbounds function getobs(env::AbstractEnvironment)
-    o = allocate(obsspace(env))
-    getobs!(o, env)
+@propagate_inbounds function getobservation(env::AbstractEnvironment)
+    o = allocate(observationspace(env))
+    getobservation!(o, env)
     o
 end
 
 
 """
-    actionspace(env::AbstractEnvironment) --> Shapes.AbstractShape
+    $(TYPEDSIGNATURES)
 
 Returns a subtype of `Shapes.AbstractShape` describing the action space of `env`.
 
-See also: [`getaction!`](@ref), [`setaction!`](@ref), [`getaction`](@ref).
+See also: [`getaction!`](@ref), [`getaction`](@ref), [`setaction!`](@ref).
 """
 @mustimplement actionspace(env::AbstractEnvironment)
 
 """
-    getaction!(action, env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Store the current action of `env` in `action`, where `action` conforms to the action space
-returned by `actionspace(env)`.
+Store the current action of `env` in `a`.
 
-See also: [`actionspace`](@ref), [`setaction!`](@ref), [`getaction`](@ref).
+See also: [`actionspace`](@ref), [`getaction`](@ref), [`setaction!`](@ref).
 """
-@mustimplement getaction!(action, env::AbstractEnvironment)
+@mustimplement getaction!(a, env::AbstractEnvironment)
 
 """
-    getaction(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Get the current action of `env`. The returned value will be an object
-conforming to the action space returned by `actionspace(env)`.
+Get the current action of `env`.
 
 See also: [`actionspace`](@ref), [`getaction!`](@ref), [`setaction!`](@ref).
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should implement
-    [`actionspace`](@ref) and [`getaction!`](@ref), which are used internally by `getaction`.
+    Implementers of `AbstractEnvironment` subtypes should implement [`actionspace`](@ref) and
+    [`getaction!`](@ref), which are used internally by `getaction`.
 """
 @propagate_inbounds function getaction(env::AbstractEnvironment)
     a = allocate(actionspace(env))
@@ -137,39 +128,37 @@ See also: [`actionspace`](@ref), [`getaction!`](@ref), [`setaction!`](@ref).
 end
 
 """
-    setaction!(env::AbstractEnvironment, action)
+    $(TYPEDSIGNATURES)
 
-Set the action of `env` to `action`, where `action` conforms to the action space returned
-by `actionspace(env)`.
+Set the current action of `env` to `a`.
 
 See also: [`actionspace`](@ref), [`getaction!`](@ref), [`getaction`](@ref).
 
 !!! note
     Implementers of custom `AbstractEnvironment` subtypes must guarantee that calls to
     other "getter" functions (e.g. `getreward`) after a call to `setaction!` reflect the
-    new, passed-in action.
+    new action `a`.
 """
-@mustimplement setaction!(env::AbstractEnvironment, action)
+@mustimplement setaction!(env::AbstractEnvironment, a)
 
 
 """
-    rewardspace(env::AbstractEnvironment) --> Shapes.AbstractShape
+    $(TYPEDSIGNATURES)
 
 Returns a subtype of `Shapes.AbstractShape` describing the reward space of `env`.
-Defaults to `Shapes.ScalarShape{Float64}()`.
+Defaults to `Shapes.ScalarShape(Float64)`.
 
 See also: [`getreward`](@ref).
 
 !!! note
-    Currently, only scalar spaces are supported (e.g. `Shapes.ScalarShape`).
+    Currently, only scalar spaces are supported.
 """
-@inline rewardspace(env::AbstractEnvironment) = ScalarShape{Float64}()
+@inline rewardspace(env::AbstractEnvironment) = ScalarShape(Float64)
 
 """
-    getreward(state, action, observation, env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Get the current reward of `env` as a function of `state`, `action`, and `observation`.
-The returned value will be an object conforming to the reward space returned by `rewardspace(env)`.
+Get the current reward of `env` as a function of state `s`, action `a`, and observation `o`.
 
 See also: [`rewardspace`](@ref).
 
@@ -177,52 +166,48 @@ See also: [`rewardspace`](@ref).
     Currently, only scalar rewards are supported, so there is no in-place `getreward!`.
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should be careful to
-    ensure that the result of `getreward` is purely a function of `state`/`action`/`observation`
-    and not any internal, dynamic state contained in `env`.
+    Implementers of `AbstractEnvironment` subtypes should be careful to ensure that the result
+    of `getreward` is purely a function of `s`/`a`/`o` and and not any internal, dynamic state
+    contained in `env`.
 """
-@mustimplement getreward(state, action, observation, env::AbstractEnvironment)
+@mustimplement getreward(s, a, o, env::AbstractEnvironment)
 
 """
-    getreward(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
 Get the current reward of `env`.
-
-Internally calls `getreward(getstate(env), getaction(env), getobs(env), env)`.
 
 See also: [`rewardspace`](@ref).
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should implement
-    `getreward(state, action, observation, env)`.
+    Implementers of `AbstractEnvironment` subtypes should implement `getreward(s, a, o, env)`.
 """
 @propagate_inbounds function getreward(env::AbstractEnvironment)
-    getreward(getstate(env), getaction(env), getobs(env), env)
+    getreward(getstate(env), getaction(env), getobservation(env), env)
 end
 
 
 """
-    reset!(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Reset `env` to a fixed, initial state with zero/passive controls.
+Reset `env` to a fixed, initial state with passive dynamics (i.e. a "zero" action).
 """
 @mustimplement reset!(env::AbstractEnvironment)
 
 """
     randreset!([rng::Random.AbstractRNG, ], env::AbstractEnvironment)
 
-Reset `env` to a random state with zero/passive controls.
+Reset `env` to a random state with passive dynamics (i.e. a "zero" action).
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should implement
-    randreset!(rng, env).
+    Implementers of `AbstractEnvironment` subtypes should implement randreset!(rng, env).
 """
 @mustimplement randreset!(rng::Random.AbstractRNG, env::AbstractEnvironment)
 @propagate_inbounds randreset!(env::AbstractEnvironment) = randreset!(Random.default_rng(), env)
 
 
 """
-    step!(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
 Advance `env` forward by one timestep.
 
@@ -232,77 +217,47 @@ See also: [`timestep`](@ref).
 
 
 """
-    isdone(state, observation, env::AbstractEnvironment) --> Bool
+    $(TYPEDSIGNATURES)
 
-Returns `true` if `state` and `observation` meet an early termination condition for `env`.
+Returns `true` if state `s` and observation `o` meet an early termination condition for `env`.
 Defaults to `false`.
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should be careful to
-    ensure that the result of `isdone` is purely a function of `state` and `observation`
-    and not any internal, dynamic state contained in `env`.
+    Implementers of `AbstractEnvironment` subtypes should be careful to ensure that the result of
+    `isdone` is purely a function of `s` and `o` and not any internal, dynamic state contained
+    in `env`.
 """
-isdone(state, obs, env::AbstractEnvironment) = false
+isdone(s, o, env::AbstractEnvironment) = false
 
 """
-    isdone(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
 Returns `true` if `env` has met an early termination condition.
 
-Internally calls `isdone(getstate(env), getobs(env), env)`.
+Internally calls `isdone(getstate(env), getobservation(env), env)`.
 
 !!! note
-    Implementers of custom `AbstractEnvironment` subtypes should implement
-    `isdone(state, action, obs, env)`.
+    Implementers of `AbstractEnvironment` subtypes should implement `isdone(s, o, env)`.
 """
 @propagate_inbounds function isdone(env::AbstractEnvironment)
-    isdone(getstate(env), getaction(env), getobs(env), env)
+    isdone(getstate(env), getobservation(env), env)
 end
 
 
 """
-    Base.time(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
-Returns the current simulation time, in seconds, of `env`. By convention,
-`time(env)` should return zero after a call to `reset!(env)` or `randreset!(env)`.
+Returns the current simulation time, in seconds, of `env`.
 
 See also: [`timestep`](@ref).
 """
 @mustimplement Base.time(env::AbstractEnvironment)
 
 """
-    timestep(env::AbstractEnvironment)
+    $(TYPEDSIGNATURES)
 
 Return the internal simulation timestep, in seconds, of `env`.
 
 See also: [`Base.time`](@ref).
-
-# Examples
-
-```julia
-env = FooEnv()
-reset!(env)
-t1 = time(env)
-step!(env)
-t2 = time(env)
-@assert timestep(env) == (t2 - t1)
-```
 """
 @mustimplement timestep(env::AbstractEnvironment)
-
-"""
-    spaces(env::AbstractEnvironment)
-
-Return a `NamedTuple` of containing all of `env`'s spaces.
-
-# Examples
-
-```julia
-env = FooEnv()
-sp = spaces(env)
-@assert statespace(env) == sp.statespace
-```
-"""
-function spaces(env::AbstractEnvironment)
-    EnvSpaces((statespace(env), obsspace(env), actionspace(env), rewardspace(env)))
-end

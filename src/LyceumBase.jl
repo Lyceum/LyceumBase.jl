@@ -32,20 +32,8 @@ using UnsafeArrays
 import UniversalLogger: finish!
 
 
-include("util.jl")
+include("util.jl") # TODO move to LyceumCore
 
-include("setfield.jl")
-@reexport using .SetfieldImpl
-
-export Converged, scaleandcenter!, symmul!, wraptopi
-export perturb!, perturbn!, perturb, perturbn
-include("math.jl")
-
-export seed_threadrngs!, threadrngs, getrange, splitrange, nblasthreads, @with_blasthreads
-include("threading.jl")
-
-export SPoint3D, MPoint3D
-include("geometry.jl")
 
 ####
 #### Interfaces
@@ -66,19 +54,29 @@ export tconstruct
 
 
 export AbstractEnvironment
-export statespace, getstate!, setstate!, getstate
-export obsspace, getobs!, getobs
-export actionspace, getaction!, setaction!, getaction
+export statespace, getstate!, getstate, setstate!
+export observationspace, getobservation!, getobservation
+export actionspace, getaction!, getaction, setaction!
 export rewardspace, getreward
 export reset!, randreset!
 export step!, isdone, timestep
-export spaces
 include("abstractenvironment.jl")
 
 
 ####
 #### Tools
 ####
+
+include("setfield.jl")
+@reexport using .SetfieldImpl
+
+include("math.jl")
+
+export tseed!, getrange, splitrange, nblasthreads, @with_blasthreads
+include("threading.jl")
+
+export SPoint3D, MPoint3D
+include("geometry.jl")
 
 export Trajectory, TrajectoryBuffer
 include("trajectory.jl")

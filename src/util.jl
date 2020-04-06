@@ -3,3 +3,5 @@ macro mustimplement(sig)
 end
 
 @inline propertytype(x, name::Symbol) = typeof(getproperty(x, name))
+
+argerror(s::AbstractString) = throw(ArgumentError(s))

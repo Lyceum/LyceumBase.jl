@@ -12,8 +12,8 @@ LyceumBase.statespace(::ToyEnv) = VectorShape(Int, 1)
 LyceumBase.getstate!(s, e::ToyEnv) = s .= e.s
 LyceumBase.setstate!(e::ToyEnv, s) = (e.s = s[]; e)
 
-LyceumBase.obsspace(::ToyEnv) = VectorShape(Int, 1)
-LyceumBase.getobs!(o, e::ToyEnv) = o .= e.t
+LyceumBase.observationspace(::ToyEnv) = VectorShape(Int, 1)
+LyceumBase.getobservation!(o, e::ToyEnv) = o .= e.t
 
 LyceumBase.actionspace(::ToyEnv) = VectorShape(Int, 1)
 LyceumBase.getaction!(a, e::ToyEnv) = a .= e.a

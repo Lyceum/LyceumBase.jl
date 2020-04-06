@@ -8,11 +8,11 @@ function makedata(e::AbstractEnvironment, lengths::Vector{Int}; isdone = isodd)
     τs = [
         Trajectory(
             [rand(statespace(e)) for _ = 1:lengths[i]],
-            [rand(obsspace(e)) for _ = 1:lengths[i]],
+            [rand(observationspace(e)) for _ = 1:lengths[i]],
             [rand(actionspace(e)) for _ = 1:lengths[i]],
             rand(lengths[i]),
             rand(statespace(e)),
-            rand(obsspace(e)),
+            rand(observationspace(e)),
             isdone(i),
         ) for i = 1:length(lengths)
     ]
@@ -53,7 +53,7 @@ end
 @testset "push!/append!/empty!" begin
     e = ToyEnv()
     ssp = statespace(e)
-    osp = obsspace(e)
+    osp = observationspace(e)
     asp = actionspace(e)
     B = TrajectoryBuffer(e)
     @test length(B) == 0

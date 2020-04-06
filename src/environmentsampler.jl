@@ -68,7 +68,6 @@ function _threaded_sample(sampler::EnvironmentSampler, policy!, reset!::R, n::In
     tid = Threads.threadid()
     env = sampler.environments[tid]
     B = sampler.buffers[tid]
-
     try
         for i=1:nthreads-1
             Threads.@spawn _thread_worker(policy!, reset!, sampler, H, alive, barriers[i])
@@ -89,6 +88,7 @@ function _threaded_sample(sampler::EnvironmentSampler, policy!, reset!::R, n::In
     finally
         alive[] = false
     end
+    return nothing
 end
 
 @inline function _thread_worker(policy!, reset!::R, sampler::EnvironmentSampler, Hmax::Atomic{Int}, alive::Atomic{Bool}, sync::Atomic{Bool}) where {R}
@@ -102,5 +102,5 @@ end
             sync[] = false
         end
     end
+    return nothing
 end
-

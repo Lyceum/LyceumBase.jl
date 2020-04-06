@@ -8,6 +8,7 @@ function scaleandcenter!(x::AbstractArray; center = 0, range = 1)
     x
 end
 
+
 @inline function symmul!(
     C::Symmetric{T},
     transA::Transpose{<:Any,<:StridedVecOrMat{T}},
@@ -17,7 +18,6 @@ end
 ) where {T<:LinearAlgebra.BlasFloat}
     A = transA.parent
     if A === B
-        #alpha, beta = promote(alpha, beta, zero(T))
         alpha = convert(T, alpha)
         beta = convert(T, beta)
         BLAS.syrk!(C.uplo, 'T', alpha, A, beta, C.data)
@@ -36,7 +36,6 @@ end
 ) where {T<:LinearAlgebra.BlasFloat}
     B = transB.parent
     if A === B
-        #alpha, beta = promote(alpha, beta, zero(T))
         alpha = convert(T, alpha)
         beta = convert(T, beta)
         BLAS.syrk!(C.uplo, 'N', alpha, B, beta, C.data)
@@ -47,7 +46,6 @@ end
 end
 
 
-
 """
     $(SIGNATURES)
 
@@ -56,25 +54,29 @@ Wrap the angle `theta`, specified in radians, to the interval [-pi, pi)
 @inline wraptopi(theta::Real) = mod1(theta + pi, 2pi) - pi
 
 
-mutable struct Converged{T}
-    "absolute tolerance"
-    tol::T
-    lastval::T
+mutable struct Converged
+    atol::Float64
+    rtol::Maybe{Float64}
+    nans::Bool
+    lastval::Number
     initialized::Bool
-    Converged{T}(tol) where {T<:Number} = new{T}(T(tol), zero(T), false)
+    Converged(atol, rtol, nans) = new(atol, rtol, nans, 0, false)
 end
-Converged(tol) = Converged{typeof(tol)}(tol)
+Converged(;atol=0, rtol=nothing, nans=false) = Converged(atol, rtol, nans)
 
-function (x::Converged)(val::Real)
-    ret = x.initialized && abs(val - x.lastval) < x.tol
-    x.initialized = true
+function (x::Converged)(val::Number)
+    if x.initialized
+        rtol = x.rtol !== nothing ? x.rtol : Base.rtoldefault(x.lastval, val, x.atol)
+        converged = isapprox(x.lastval, val, atol = x.atol, rtol = rtol, nans=x.nans)
+    else
+        x.initialized = true
+        converged = false
+    end
     x.lastval = val
-    ret
+    return converged
 end
 
-reset!(x::Converged{T}) where {T} = (x.initialized = false; x.lastval = zero(T); x)
-
-
+reset!(x::Converged) = (x.initialized = false; x.lastval = 0; x)
 
 
 perturb(rng::AbstractRNG, A::AbstractArray) = perturb!(rng, copy(A))

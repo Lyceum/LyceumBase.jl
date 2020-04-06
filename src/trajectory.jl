@@ -82,11 +82,11 @@ function TrajectoryBuffer(env::AbstractEnvironment; sizehint::Integer = 1024)
     sizehint > 0 || throw(ArgumentError("sizehint must be ≥ 0"))
     TrajectoryBuffer(
         asvec(ElasticArray(undef, statespace(env), sizehint)),
-        asvec(ElasticArray(undef, obsspace(env), sizehint)),
+        asvec(ElasticArray(undef, observationspace(env), sizehint)),
         asvec(ElasticArray(undef, actionspace(env), sizehint)),
         Array(undef, rewardspace(env), sizehint),
         asvec(ElasticArray(undef, statespace(env), 0)),
-        asvec(ElasticArray(undef, obsspace(env), 0)),
+        asvec(ElasticArray(undef, observationspace(env), 0)),
         Bool[],
         Int[0],
         0,
@@ -210,7 +210,7 @@ function rollout!(policy!::P, B::TrajectoryBuffer, env::AbstractEnvironment, Hma
         at = A[offset + t]::SubArray
 
         getstate!(st, env)
-        getobs!(ot, env)
+        getobservation!(ot, env)
         policy!(at, st, ot)
         R[offset+t] = getreward(st, at, ot, env)
 
@@ -220,7 +220,7 @@ function rollout!(policy!::P, B::TrajectoryBuffer, env::AbstractEnvironment, Hma
     end
     B.len += 1
     getstate!(B.sT[length(B)], env)
-    getobs!(B.oT[length(B)], env)
+    getobservation!(B.oT[length(B)], env)
     B.done[length(B)] = done
     B.offsets[length(B)+1] = B.offsets[length(B)] + t
 
@@ -238,26 +238,27 @@ function collate!(
     nsamples::Integer,
 ) where {T<:TrajectoryBuffer}
     _sizehint!(dest, nsamples, sum(length, Bs))
+    empty!(dest)
+
     togo = nsamples
     for B in Bs, τ in B
-        if togo < length(τ)
-            push!(
-                dest,
-                Trajectory(
-                    view(τ.S, 1:togo),
-                    view(τ.O, 1:togo),
-                    view(τ.A, 1:togo),
-                    view(τ.R, 1:togo),
-                    τ.S[togo + 1],
-                    τ.O[togo + 1],
-                    false,
-                ),
-            )
+        if togo == 0
             break
+        elseif togo < length(τ)
+            τ′ = Trajectory(
+                view(τ.S, 1:togo),
+                view(τ.O, 1:togo),
+                view(τ.A, 1:togo),
+                view(τ.R, 1:togo),
+                τ.S[togo + 1],
+                τ.O[togo + 1],
+                false,
+            )
         else
-            push!(dest, τ)
+            τ′ = τ
         end
-        togo -= length(τ)
+        push!(dest, τ′)
+        togo -= length(τ′)
     end
 
     return dest
