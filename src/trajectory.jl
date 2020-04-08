@@ -220,7 +220,16 @@ function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
     return B
 end
 
+"""
+    $(TYPEDSIGNATURES)
 
+Rollout the actions computed by `policy!` on `env`, starting at whatever state `env` is currently
+in, for `Hmax` timesteps or until `isdone(st, ot, env)` returns `true` and store the resultant
+trajectory in `B`. `policy!` should be a function of the form `policy!(at, ot)` which computes an
+action given the current observation `ot` and stores it in `at`.
+
+See also: [`sample!`](@ref), [`sample`](@ref).
+"""
 function rollout!(policy!, B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Integer)
     _rollout!(policy!, B, env, convert(Int, Hmax))
     return B
@@ -249,7 +258,7 @@ function _rollout!(
     getstate!(st, env)
     getobservation!(ot, env)
     while true
-        stopcb() && return 0
+        stopcb() && return 0 # Abandon the current rollout
 
         # Get the policy's action for (st, ot, at)
         at = A[offset+t]::SubArray

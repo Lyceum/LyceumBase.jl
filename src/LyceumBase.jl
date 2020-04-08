@@ -78,7 +78,7 @@ include("threading.jl")
 export SPoint3D, MPoint3D
 include("geometry.jl")
 
-export Trajectory, TrajectoryBuffer
+export Trajectory, TrajectoryBuffer, rollout!
 include("trajectory.jl")
 
 export EnvironmentSampler, sample, sample!
