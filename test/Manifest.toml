@@ -165,11 +165,6 @@ git-tree-sha1 = "88bb0edb352b16608036faadcc071adda068582a"
 uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.8.1"
 
-[[ElasticArrays]]
-git-tree-sha1 = "5b5b7cb8cba44bcf337b8af0a1f3e57c89468660"
-uuid = "fdbdab4c-e67f-52f5-8c3f-e7b388dad3d4"
-version = "1.0.0"
-
 [[EllipsisNotation]]
 git-tree-sha1 = "65dad386e877850e6fce4fc77f60fe75a468ce9d"
 uuid = "da5c29d0-fa7d-589e-88eb-ea29b0a81949"
@@ -328,10 +323,10 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[LyceumBase]]
-deps = ["Adapt", "BangBang", "BenchmarkTools", "Dates", "Distributions", "DocStringExtensions", "ElasticArrays", "EllipsisNotation", "Future", "InteractiveUtils", "JLSO", "LibGit2", "LinearAlgebra", "Logging", "MacroTools", "Parameters", "Pkg", "Random", "Reexport", "Setfield", "Shapes", "StaticArrays", "Statistics", "Test", "TimeZones", "UnicodePlots", "UniversalLogger", "UnsafeArrays"]
-git-tree-sha1 = "680cdfbe11f9b029c65f36932fec66d40238b9bd"
+deps = ["Adapt", "AutoHashEquals", "AxisArrays", "BangBang", "BenchmarkTools", "Dates", "Distributions", "DocStringExtensions", "FastClosures", "Future", "InteractiveUtils", "JLSO", "LibGit2", "LinearAlgebra", "Logging", "LyceumCore", "MacroTools", "Parameters", "Pkg", "Printf", "Random", "Reexport", "Setfield", "Shapes", "SpecialArrays", "StaticArrays", "Statistics", "UnicodePlots", "UniversalLogger", "UnsafeArrays"]
+path = ".."
 uuid = "db31fed1-ca1e-4084-8a49-12fae1996a55"
-version = "0.2.1"
+version = "0.3.0-DEV"
 
 [[LyceumCore]]
 deps = ["LyceumDevTools", "StaticNumbers"]
@@ -562,7 +557,7 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialArrays]]
 deps = ["Adapt", "DocStringExtensions", "LyceumCore", "LyceumDevTools", "MacroTools", "Requires", "Shapes", "StaticNumbers", "UnsafeArrays", "Zygote"]
-git-tree-sha1 = "7ccdb6469484b8dee04262b1c3e988a03c91146e"
+git-tree-sha1 = "ec469d3e833a06be6c5ab5cfc0b3d7e3f13c2dd4"
 repo-rev = "master"
 repo-url = "https://github.com/Lyceum/SpecialArrays.jl.git"
 uuid = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
