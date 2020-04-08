@@ -232,6 +232,7 @@ See also: [`sample!`](@ref), [`sample`](@ref).
 """
 function rollout!(policy!, B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Integer)
     _rollout!(policy!, B, env, convert(Int, Hmax))
+    truncate!(B)
     return B
 end
 
