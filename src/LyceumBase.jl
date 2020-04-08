@@ -1,32 +1,38 @@
 module LyceumBase
 
+using AutoHashEquals
+using Adapt
+
 using Base: @propagate_inbounds
-using Test
-using Random
-using Shapes
-using BenchmarkTools: @benchmark
+using Base.Threads: Atomic, atomic_add!, atomic_sub!
+
+using Dates
 using DocStringExtensions
+using Distributions: Distributions, Sampleable, sample, sample!
+using FastClosures: @closure
+using Future: randjump
+using InteractiveUtils
+using JLSO
+using LinearAlgebra
+using LibGit2
+using Logging
+using LyceumCore
+using MacroTools
+using Parameters
+using Pkg
+using Printf: @sprintf
+using Random
 using Reexport
 
+using SpecialArrays
+using SpecialArrays: True, False
 
-
-const Maybe{T} = Union{T,Nothing}
-const TupleN{T,N} = NTuple{N,T}
-
-const AbsArr{T,N} = AbstractArray{T,N}
-const AbsMat{T} = AbstractMatrix{T}
-const AbsVec{T} = AbstractVector{T}
-
-const RealArr{N} = AbstractArray{<:Real,N}
-const RealMat = AbstractMatrix{<:Real}
-const RealVec = AbstractVector{<:Real}
-
-
-
-include("util.jl")
-include("setfield.jl")
-@reexport using .SetfieldImpl
-
+using Shapes
+using StaticArrays
+using UnicodePlots: UnicodePlots
+using UniversalLogger
+using UnsafeArrays
+import UniversalLogger: finish!
 
 
 ####
@@ -34,12 +40,11 @@ include("setfield.jl")
 ####
 
 """
-    tconstruct(T::Type, n::Integer, args...; kwargs...) --> NTuple{n, <:T}
+    $(SIGNATURES)
 
-Return a Tuple of `n` instances of `T`. By default, this returns
-`ntuple(_ -> T(args...; kwargs...), n)`, but this function can be
-extended for types that can share data across instances for greater
-cache efficiency/performance.
+Return a `AbstractVector` of `n` instances of `T`. By default, this returns
+`[T(args...; kwargs...) for _=1:n], but this function can be extended for types that can share
+data across instances for greater cache efficiency/performance.
 """
 function tconstruct(T::Type, n::Integer, args...; kwargs...)
     n > 0 || throw(ArgumentError("n must be > 0"))
@@ -47,38 +52,44 @@ function tconstruct(T::Type, n::Integer, args...; kwargs...)
 end
 export tconstruct
 
-export
-    AbstractEnvironment,
 
-    statespace,
-    getstate!,
-    setstate!,
-    getstate,
-
-    obsspace,
-    getobs!,
-    getobs,
-
-    actionspace,
-    getaction!,
-    setaction!,
-    getaction,
-
-    rewardspace,
-    getreward,
-
-    evalspace,
-    geteval,
-
-    reset!,
-    randreset!,
-    step!,
-    isdone,
-    timestep,
-    spaces
+export AbstractEnvironment
+export statespace, getstate!, getstate, setstate!
+export observationspace, getobservation!, getobservation
+export actionspace, getaction!, getaction, setaction!
+export rewardspace, getreward
+export reset!, randreset!
+export step!, isdone, timestep
 include("abstractenvironment.jl")
 
-export Tools
-include("Tools/Tools.jl")
+
+####
+#### Tools
+####
+
+include("setfield.jl")
+@reexport using .SetfieldImpl
+
+include("math.jl")
+
+export tseed!, getrange, splitrange, nblasthreads, @with_blasthreads
+include("threading.jl")
+
+export SPoint3D, MPoint3D
+include("geometry.jl")
+
+export Trajectory, TrajectoryBuffer, rollout!
+include("trajectory.jl")
+
+export EnvironmentSampler, sample, sample!
+include("environmentsampler.jl")
+
+include("projectmeta.jl")
+
+export Line, termplot
+include("plotting.jl")
+
+export Experiment, finish!
+include("experiment.jl")
 
 end # module

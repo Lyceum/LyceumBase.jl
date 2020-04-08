@@ -1,9 +1,7 @@
-using Test
-using LyceumBase
-using Random: MersenneTwister
-using Distributions: Uniform
+module TestLyceumBase
 
-@testset "LyceumBase.jl" begin
-    @testset "Tools" begin include("Tools/Tools.jl") end
-    @testset "setfield" begin include("setfield.jl") end
-end
+include("preamble.jl")
+
+@includetests "LyceumBase"
+
+end # module
