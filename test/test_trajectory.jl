@@ -95,7 +95,6 @@ end
 
 @testset "collate" begin
     e = ToyEnv()
-
     let
         Vs = [TrajectoryBuffer(e), TrajectoryBuffer(e), TrajectoryBuffer(e)]
         τs = makedata(e, [2, 3, 4])
@@ -107,7 +106,6 @@ end
         @test nsamples(C) == 9
         @test C == τs
     end
-
     let
         Vs = [TrajectoryBuffer(e), TrajectoryBuffer(e), TrajectoryBuffer(e)]
         τs = makedata(e, [2, 3, 4]; isdone = i -> true)
