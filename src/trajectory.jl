@@ -235,12 +235,15 @@ function _rollout!(
 )
     Hmax > 0 || throw(ArgumentError("Hmax must be > 0"))
 
-    _sizehint!(B, nsamples(B) + Hmax, length(B) + 1)
+    # pre-allocate for one additional trajectory with a length of Hmax + 1.
+    # "+1" because of the terminal state/observation
+    _sizehint!(B, nsamples(B) + Hmax + 1, length(B) + 1)
     offset = B.offsets[length(B)+1]
     @unpack S, O, A, R = B
 
     t::Int = 1
     done::Bool = false
+    # get the initial state/observation
     st = S[offset+t]::SubArray
     ot = O[offset+t]::SubArray
     getstate!(st, env)
@@ -248,6 +251,7 @@ function _rollout!(
     while true
         stopcb() && return 0
 
+        # Get the policy's action for (st, ot, at)
         at = A[offset+t]::SubArray
         getaction!(at, env) # Fill at with env's current action for convenience
         policy!(at, ot)
@@ -264,6 +268,8 @@ function _rollout!(
 
         done = isdone(st, ot, env)
 
+        # Break *after* we've hit Hmax or isdone returns true. If isdone never returns true,
+        # then this loop will run for Hmax + 1 iterations.
         (t > Hmax || done) && break
     end
 
