@@ -23,7 +23,7 @@ end
     sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(; env_kwargs...), n))
 
     i = 1
-    B = sample(sampler, ntimesteps, reset! = reset!, nthreads = 1) do a, s, o
+    B = sample(sampler, ntimesteps, reset! = reset!, nthreads = 1) do a, o
         a .= i
         i += 1
     end
@@ -75,7 +75,7 @@ end
     sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(; env_kwargs...), n))
 
     tcounts = zeros(Int, Threads.nthreads())
-    B = sample(sampler, ntimesteps, reset! = reset!, nthreads = nthreads) do a, s, o
+    B = sample(sampler, ntimesteps, reset! = reset!, nthreads = nthreads) do a, o
         a .= Threads.threadid()
         tcounts[Threads.threadid()] += 1
     end
@@ -108,7 +108,6 @@ end
     @test length(nonempty) == nthreads
     @test begin
         minn, maxx = extrema(map(length, nonempty))
-        @info "yo" minn maxx
         # test that the number of trajectories collected by each thread differs by at most 2
         maxx - minn <= 2
     end

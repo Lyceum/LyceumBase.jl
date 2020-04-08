@@ -10,19 +10,19 @@ struct Line
 end
 Line(y::AbstractVector, name = "") = Line(Base.OneTo(length(y)), y, name)
 
-function expplot(x::AbstractVector, y::AbstractVector, name = nothing, args...; kwargs...)
-    expplot(Line(x, y, name), args...; kwargs...)
+function termplot(x::AbstractVector, y::AbstractVector, name = nothing, args...; kwargs...)
+    termplot(Line(x, y, name), args...; kwargs...)
 end
 
-function expplot(y::AbstractVector, name = nothing, args...; kwargs...)
-    expplot(Line(y, name), args...; kwargs...)
+function termplot(y::AbstractVector, name = nothing, args...; kwargs...)
+    termplot(Line(y, name), args...; kwargs...)
 end
 
-function expplot(
+function termplot(
     lines::Line...;
     title = "",
-    width = 80,
-    height = 6,
+    width = 60,
+    height = 10,
     normalize = false,
     maxpoints = typemax(Int),
 )
@@ -42,36 +42,37 @@ function expplot(
     end
     xmin = minimum(l -> minimum(l.x), lines)
 
-    extremas = map(l -> round.(extrema(l.y), digits = 2), lines) # range of data before transformations
-    curs = map(l -> round(l.y[end], digits = 2), lines)
 
     # shift/scale lines to fall into [-1, 1]
     if normalize
-        lines =
-            map(l -> Line(l.x, scaleandcenter!(copy(l.y), center = 0, range = 2), l.name), lines)
+        names = map(lines) do l
+            minn, maxx = extrema(l.y)
+            @sprintf "%s=%.3g [%.3g, %.3g]" l.name l.y[end] minn maxx
+        end
+        lines = map(lines) do l
+            Line(l.x, scaleandcenter!(Float64.(l.y), center = 0, range = 2), l.name)
+        end
+    else
+        names = map(l -> l.name, lines)
     end
 
     ymin = round(minimum(l -> minimum(l.y), lines), digits = 2)
     ymax = round(maximum(l -> maximum(l.y), lines), digits = 2)
 
-    n(l, e, c) = normalize ? "$(l.name)=$c [$(e[1]):$(e[2])]" : l.name
-
     l = lines[1]
     plt = UnicodePlots.lineplot(
         l.x,
         l.y;
-        name = n(l, extremas[1], curs[1]),
+        name = names[1],
         xlim = [xmin, xmax],
         ylim = [ymin, ymax],
         title = title,
         width = width,
         height = height,
     )
-    for lidx = 2:length(lines)
-        l = lines[lidx]
-        e = extremas[lidx]
-        c = curs[lidx]
-        UnicodePlots.lineplot!(plt, l.x, l.y, name = n(l, e, c))
+    for i = 2:length(lines)
+        l = lines[i]
+        UnicodePlots.lineplot!(plt, l.x, l.y, name = names[i])
     end
     plt
 end

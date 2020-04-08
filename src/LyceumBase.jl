@@ -8,7 +8,7 @@ using Base.Threads: Atomic, atomic_add!, atomic_sub!
 
 using Dates
 using DocStringExtensions
-using Distributions: Sampleable
+using Distributions: Distributions, Sampleable, sample, sample!
 using FastClosures: @closure
 using Future: randjump
 using InteractiveUtils
@@ -20,6 +20,7 @@ using LyceumCore
 using MacroTools
 using Parameters
 using Pkg
+using Printf: @sprintf
 using Random
 using Reexport
 
@@ -32,9 +33,6 @@ using UnicodePlots: UnicodePlots
 using UniversalLogger
 using UnsafeArrays
 import UniversalLogger: finish!
-
-
-include("util.jl") # TODO move to LyceumCore
 
 
 ####
@@ -88,7 +86,7 @@ include("environmentsampler.jl")
 
 include("projectmeta.jl")
 
-export Line, expplot
+export Line, termplot
 include("plotting.jl")
 
 export Experiment, finish!

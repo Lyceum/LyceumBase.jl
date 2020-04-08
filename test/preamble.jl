@@ -1,5 +1,5 @@
 using BenchmarkTools
-using Distributions: Uniform
+using Distributions: Uniform, sample
 using LinearAlgebra
 
 using LyceumDevTools

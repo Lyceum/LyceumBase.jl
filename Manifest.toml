@@ -334,16 +334,20 @@ uuid = "db31fed1-ca1e-4084-8a49-12fae1996a55"
 version = "0.2.1"
 
 [[LyceumCore]]
-deps = ["StaticNumbers"]
-git-tree-sha1 = "28ace31199a3f42d6f0257921710babc95cbe306"
+deps = ["LyceumDevTools", "StaticNumbers"]
+git-tree-sha1 = "7cb9c088a42228421b6d553efc88fe8f65fa368c"
+repo-rev = "master"
+repo-url = "https://github.com/Lyceum/LyceumCore.jl.git"
 uuid = "e5bd5517-2193-49f0-ba9c-d5a8508cb639"
 version = "0.1.1"
 
 [[LyceumDevTools]]
 deps = ["Base64", "BenchmarkTools", "Dates", "Distributed", "GitHub", "HTTP", "JuliaFormatter", "LibGit2", "LyceumBase", "LyceumCore", "MacroTools", "Markdown", "Parameters", "Pkg", "PkgTemplates", "Random", "Reexport", "Registrator", "RegistryTools", "Shapes", "Test"]
-git-tree-sha1 = "20284289af8b3ca458b9b1c50e74a00a79fb3059"
+git-tree-sha1 = "11e07d93fc2f8cc95ce2e3d58701e7c3cea65de7"
+repo-rev = "master"
+repo-url = "https://github.com/Lyceum/LyceumDevTools.jl.git"
 uuid = "fd23256c-5a67-41c4-8f5a-c8cf5526e505"
-version = "0.3.2"
+version = "0.4.0"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -558,7 +562,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialArrays]]
 deps = ["Adapt", "DocStringExtensions", "LyceumCore", "LyceumDevTools", "MacroTools", "Requires", "Shapes", "StaticNumbers", "UnsafeArrays", "Zygote"]
-git-tree-sha1 = "c2fb9f47d757c0e76b529eca454fc8d2adb28316"
+git-tree-sha1 = "7ccdb6469484b8dee04262b1c3e988a03c91146e"
+repo-rev = "master"
+repo-url = "https://github.com/Lyceum/SpecialArrays.jl.git"
 uuid = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
 version = "0.1.1"
 

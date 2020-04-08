@@ -10,3 +10,6 @@ Shapes = "175de200-b73b-11e9-28b7-9b5b306cec37"
 SpecialArrays = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
+
+[compat]
+LyceumDevTools = "0.4"

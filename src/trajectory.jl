@@ -10,14 +10,30 @@
     sT::ST
     oT::OT
     done::Bool
-    @inline function Trajectory{SS,OO,AA,RR,ST,OT}(S, O, A, R, sT, oT, done) where {SS,OO,AA,RR,ST,OT}
+    @inline function Trajectory{SS,OO,AA,RR,ST,OT}(
+        S,
+        O,
+        A,
+        R,
+        sT,
+        oT,
+        done,
+    ) where {SS,OO,AA,RR,ST,OT}
         τ = new(S, O, A, R, sT, oT, done)
         _check_consistency(τ)
         return τ
     end
 end
 
-@inline function Trajectory(S::SS, O::OO, A::AA, R::RR, sT::ST, oT::OT, done) where {SS,OO,AA,RR,ST,OT}
+@inline function Trajectory(
+    S::SS,
+    O::OO,
+    A::AA,
+    R::RR,
+    sT::ST,
+    oT::OT,
+    done,
+) where {SS,OO,AA,RR,ST,OT}
     Trajectory{SS,OO,AA,RR,ST,OT}(S, O, A, R, sT, oT, done)
 end
 
@@ -35,7 +51,8 @@ Base.length(τ::Trajectory) = (_check_consistency(τ); length(τ.A))
 #### TrajectoryBuffer
 ####
 
-mutable struct TrajectoryBuffer{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec,ST,OT} <: AbsVec{T}
+mutable struct TrajectoryBuffer{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec,ST,OT} <:
+               AbsVec{T}
     S::SS
     O::OO
     A::AA
@@ -78,7 +95,11 @@ end
     TrajectoryBuffer{T,SS,OO,AA,RR,ST,OT}(S, O, A, R, sT, oT, done, offsets, len)
 end
 
-function TrajectoryBuffer(env::AbstractEnvironment; dtype::Maybe{DataType} = nothing, sizehint::Integer = 1024)
+function TrajectoryBuffer(
+    env::AbstractEnvironment;
+    dtype::Maybe{DataType} = nothing,
+    sizehint::Integer = 1024,
+)
     sizehint > 0 || throw(ArgumentError("sizehint must be ≥ 0"))
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
     TrajectoryBuffer(
@@ -94,7 +115,7 @@ function TrajectoryBuffer(env::AbstractEnvironment; dtype::Maybe{DataType} = not
     )
 end
 
-@inline function _check_consistency(B::TrajectoryBuffer)
+function _check_consistency(B::TrajectoryBuffer)
     if !(length(B.S) == length(B.O) == length(B.A) == length(B.R))
         throw(DimensionMismatch("Lengths of S, O, A, and R do not match"))
     end
@@ -115,8 +136,7 @@ end
 @inline Base.size(B::TrajectoryBuffer) = (length(B),)
 
 @propagate_inbounds function Base.getindex(B::TrajectoryBuffer, i::Int)
-    from, to = B.offsets[i] + 1, B.offsets[i + 1]
-    range = from:to
+    range = (B.offsets[i]+1):B.offsets[i+1]
     Trajectory(B.S[range], B.O[range], B.A[range], B.R[range], B.sT[i], B.oT[i], B.done[i])
 end
 
@@ -126,7 +146,7 @@ Base.empty!(B::TrajectoryBuffer) = B.len = 0
 
 # TODO HasLength/HasShape
 function Base.append!(B::TrajectoryBuffer, iter)
-    offset = B.offsets[length(B) + 1]
+    offset = B.offsets[length(B)+1]
     _sizehint!(B, nsamples(B) + sum(length, iter), length(B) + length(iter))
 
     for τ::Trajectory in iter
@@ -140,7 +160,7 @@ function Base.append!(B::TrajectoryBuffer, iter)
         B.sT[length(B)] = τ.sT
         B.oT[length(B)] = τ.oT
         B.done[length(B)] = τ.done
-        B.offsets[length(B) + 1] = offset + len_τ
+        B.offsets[length(B)+1] = offset + len_τ
 
         offset += len_τ
     end
@@ -148,6 +168,7 @@ function Base.append!(B::TrajectoryBuffer, iter)
     _check_consistency(B)
     return B
 end
+
 
 function truncate!(B::TrajectoryBuffer)
     resize!(B.S, nsamples(B))
@@ -159,6 +180,12 @@ function truncate!(B::TrajectoryBuffer)
     resize!(B.done, length(B))
     resize!(B.offsets, length(B) + 1)
     return B
+end
+
+@inline nsamples(B::TrajectoryBuffer) = B.offsets[length(B)+1]
+@inline function nsamples(B::Trajectory, i::Integer)
+    @boundscheck checkbounds(B, i)
+    B.offsets[i+1] - B.offsets[i]
 end
 
 function _resize!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
@@ -193,43 +220,45 @@ function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
     return B
 end
 
-@inline nsamples(B::TrajectoryBuffer) = B.offsets[length(B) + 1]
-@inline function nsamples(B::Trajectory, i::Integer)
-    @boundscheck checkbounds(B, i)
-    B.offsets[i+1] - B.offsets[i]
-end
 
 function rollout!(policy!, B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Integer)
     _rollout!(policy!, B, env, convert(Int, Hmax))
     return B
 end
 
-function _rollout!(@specialize(policy!), B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Int, stopcb = () -> false)
+function _rollout!(
+    @specialize(policy!),
+    B::TrajectoryBuffer,
+    env::AbstractEnvironment,
+    Hmax::Int,
+    stopcb = () -> false,
+)
     Hmax > 0 || throw(ArgumentError("Hmax must be > 0"))
 
     _sizehint!(B, nsamples(B) + Hmax, length(B) + 1)
-    offset = B.offsets[length(B) + 1]
+    offset = B.offsets[length(B)+1]
     @unpack S, O, A, R = B
 
     t::Int = 1
     done::Bool = false
-    st = S[offset + t]::SubArray
-    ot = O[offset + t]::SubArray
+    st = S[offset+t]::SubArray
+    ot = O[offset+t]::SubArray
     getstate!(st, env)
     getobservation!(ot, env)
     while true
         stopcb() && return 0
 
-        at = A[offset + t]::SubArray
-        policy!(at, st, ot)
+        at = A[offset+t]::SubArray
+        getaction!(at, env) # Fill at with env's current action for convenience
+        policy!(at, ot)
         R[offset+t] = getreward(st, at, ot, env)
 
         setaction!(env, at)
         step!(env)
         t += 1
 
-        st = S[offset + t]::SubArray
-        ot = O[offset + t]::SubArray
+        st = S[offset+t]::SubArray
+        ot = O[offset+t]::SubArray
         getstate!(st, env)
         getobservation!(ot, env)
 
@@ -239,8 +268,8 @@ function _rollout!(@specialize(policy!), B::TrajectoryBuffer, env::AbstractEnvir
     end
 
     B.len += 1
-    B.sT[length(B)] = S[offset + t]
-    B.oT[length(B)] = O[offset + t]
+    B.sT[length(B)] = S[offset+t]
+    B.oT[length(B)] = O[offset+t]
     B.done[length(B)] = done
     B.offsets[length(B)+1] = B.offsets[length(B)] + t - 1
 
@@ -249,15 +278,11 @@ end
 
 
 
-function collate(Bs::AbsVec{T}, env::AbstractEnvironment, nsamples::Integer) where {T<:TrajectoryBuffer}
+function collate(Bs::AbsVec{<:TrajectoryBuffer}, env::AbstractEnvironment, nsamples::Integer)
     collate!(TrajectoryBuffer(env), Bs, nsamples)
 end
 
-function collate!(
-    dest::T,
-    Bs::AbsVec{T},
-    nsamples::Integer,
-) where {T<:TrajectoryBuffer}
+function collate!(dest::TrajectoryBuffer, Bs::AbsVec{<:TrajectoryBuffer}, nsamples::Integer)
     _sizehint!(dest, nsamples, sum(length, Bs))
     empty!(dest)
 
@@ -271,8 +296,8 @@ function collate!(
                 view(τ.O, 1:togo),
                 view(τ.A, 1:togo),
                 view(τ.R, 1:togo),
-                τ.S[togo + 1],
-                τ.O[togo + 1],
+                τ.S[togo+1],
+                τ.O[togo+1],
                 false,
             )
         else

@@ -4,17 +4,29 @@ struct EnvironmentSampler{E<:AbstractEnvironment,B<:TrajectoryBuffer}
     function EnvironmentSampler(env_tconstructor; dtype::Maybe{DataType} = nothing)
         nt = Threads.nthreads()
         envs = [env_tconstructor(nt)...]
-        bufs = [TrajectoryBuffer(first(envs), dtype=dtype) for _ = 1:nt]
+        bufs = [TrajectoryBuffer(first(envs), dtype = dtype) for _ = 1:nt]
         new{eltype(envs),eltype(bufs)}(envs, bufs)
     end
 end
 
 
-function sample(policy!, sampler::EnvironmentSampler, nsamples::Integer; dtype::Maybe{DataType} = nothing, kwargs...)
-    sample!(TrajectoryBuffer(first(sampler.environments), dtype = dtype), policy!, sampler, nsamples; kwargs...)
+function Distributions.sample(
+    policy!,
+    sampler::EnvironmentSampler,
+    nsamples::Integer;
+    dtype::Maybe{DataType} = nothing,
+    kwargs...,
+)
+    sample!(
+        TrajectoryBuffer(first(sampler.environments), dtype = dtype),
+        policy!,
+        sampler,
+        nsamples;
+        kwargs...,
+    )
 end
 
-function sample!(
+function Distributions.sample!(
     B::TrajectoryBuffer,
     policy!,
     sampler::EnvironmentSampler,
@@ -59,7 +71,8 @@ function _sample(
     return nothing
 end
 
-function _threaded_sample(sampler::EnvironmentSampler,
+function _threaded_sample(
+    sampler::EnvironmentSampler,
     policy!,
     reset!,
     n::Integer,
