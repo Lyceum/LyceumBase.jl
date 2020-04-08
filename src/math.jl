@@ -62,12 +62,12 @@ mutable struct Converged
     initialized::Bool
     Converged(atol, rtol, nans) = new(atol, rtol, nans, 0, false)
 end
-Converged(;atol=0, rtol=nothing, nans=false) = Converged(atol, rtol, nans)
+Converged(; atol = 0, rtol = nothing, nans = false) = Converged(atol, rtol, nans)
 
 function (x::Converged)(val::Number)
     if x.initialized
         rtol = x.rtol !== nothing ? x.rtol : Base.rtoldefault(x.lastval, val, x.atol)
-        converged = isapprox(x.lastval, val, atol = x.atol, rtol = rtol, nans=x.nans)
+        converged = isapprox(x.lastval, val, atol = x.atol, rtol = rtol, nans = x.nans)
     else
         x.initialized = true
         converged = false

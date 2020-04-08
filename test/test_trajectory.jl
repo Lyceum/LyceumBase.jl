@@ -27,7 +27,17 @@ end
 end
 
 @testset "indexing" begin
-    B = TrajectoryBuffer(rand(6), rand(6), rand(6), rand(6), rand(3), rand(3), [true, false, true], [0, 1, 3, 6], 3)
+    B = TrajectoryBuffer(
+        rand(6),
+        rand(6),
+        rand(6),
+        rand(6),
+        rand(3),
+        rand(3),
+        [true, false, true],
+        [0, 1, 3, 6],
+        3,
+    )
     @test length(B) == 3
     @test nsamples(B) == 6
     parent(B.S)[:] .= 1:6
@@ -117,7 +127,7 @@ end
                 τs[3].R[1:3],
                 τs[3].S[4],
                 τs[3].O[4],
-                false
+                false,
             )
             C[3] == τ
         end

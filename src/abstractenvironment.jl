@@ -261,3 +261,25 @@ Return the internal simulation timestep, in seconds, of `env`.
 See also: [`Base.time`](@ref).
 """
 @mustimplement timestep(env::AbstractEnvironment)
+
+
+"""
+    $(TYPEDSIGNATURES)
+
+Return a `NamedTuple` of containing all of `env`'s spaces.
+
+# Examples
+```julia
+env = FooEnv()
+sp = spaces(env)
+@assert statespace(env) == sp.statespace
+```
+"""
+function spaces(env::AbstractEnvironment)
+    (
+        statespace = statespace(env),
+        observationspace = observationspace(env),
+        actionspace = actionspace(env),
+        rewardspace = rewardspace(env),
+    )
+end

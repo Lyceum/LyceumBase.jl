@@ -1,6 +1,7 @@
 module LyceumBase
 
 using AutoHashEquals
+using Adapt
 
 using Base: @propagate_inbounds
 using Base.Threads: Atomic, atomic_add!, atomic_sub!
@@ -8,6 +9,7 @@ using Base.Threads: Atomic, atomic_add!, atomic_sub!
 using Dates
 using DocStringExtensions
 using Distributions: Sampleable
+using FastClosures: @closure
 using Future: randjump
 using InteractiveUtils
 using JLSO

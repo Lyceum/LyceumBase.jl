@@ -50,7 +50,7 @@ splitrange(N::Int, np::Int) = splitrange(1:N, np)
 function splitrange(range::UnitRange{Int}, np::Int)
     d, r = divrem(length(range), np)
     np = d == 0 ? r : np
-    UnitRange{Int}[getrange(range, np, i) for i=1:np]
+    UnitRange{Int}[getrange(range, np, i) for i = 1:np]
 end
 
 """

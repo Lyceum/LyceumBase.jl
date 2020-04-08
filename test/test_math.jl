@@ -22,7 +22,11 @@ using LyceumBase: perturb!, perturbn!, perturb, perturbn
 end
 
 @testset "symmul!" begin
-    let X = Symmetric(zeros(100, 100)), Y = rand(100, 10), X2 = Symmetric(zeros(100, 100)), Y2 = copy(Y)
+    let X = Symmetric(zeros(100, 100)),
+        Y = rand(100, 10),
+        X2 = Symmetric(zeros(100, 100)),
+        Y2 = copy(Y)
+
         BLAS.syrk!('U', 'N', 1.0, Y, 0.0, X.data)
         symmul!(X2, Y2, transpose(Y2), 1.0, 0.0)
         @test X == X2
@@ -42,11 +46,11 @@ end
 end
 
 @testset "Converged" begin
-    let C = Converged(atol=1)
+    let C = Converged(atol = 1)
         @test !C(0) && !C(2) && C(3)
         @test !C(0) && !C(2) && !C(3 + sqrt(eps()))
     end
-    let C = Converged(rtol=0.5)
+    let C = Converged(rtol = 0.5)
         @test !C(0) && !C(2) && C(4)
         @test !C(0) && !C(2) && !C(4 + sqrt(eps()))
     end

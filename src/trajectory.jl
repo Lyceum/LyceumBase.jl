@@ -78,15 +78,16 @@ end
     TrajectoryBuffer{T,SS,OO,AA,RR,ST,OT}(S, O, A, R, sT, oT, done, offsets, len)
 end
 
-function TrajectoryBuffer(env::AbstractEnvironment; sizehint::Integer = 1024)
+function TrajectoryBuffer(env::AbstractEnvironment; dtype::Maybe{DataType} = nothing, sizehint::Integer = 1024)
     sizehint > 0 || throw(ArgumentError("sizehint must be ≥ 0"))
+    sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
     TrajectoryBuffer(
-        asvec(ElasticArray(undef, statespace(env), sizehint)),
-        asvec(ElasticArray(undef, observationspace(env), sizehint)),
-        asvec(ElasticArray(undef, actionspace(env), sizehint)),
-        Array(undef, rewardspace(env), sizehint),
-        asvec(ElasticArray(undef, statespace(env), 0)),
-        asvec(ElasticArray(undef, observationspace(env), 0)),
+        asvec(ElasticArray(undef, sp.statespace, sizehint)),
+        asvec(ElasticArray(undef, sp.observationspace, sizehint)),
+        asvec(ElasticArray(undef, sp.actionspace, sizehint)),
+        Array(undef, sp.rewardspace, sizehint),
+        asvec(ElasticArray(undef, sp.statespace, 0)),
+        asvec(ElasticArray(undef, sp.observationspace, 0)),
         Bool[],
         Int[0],
         0,
@@ -193,39 +194,59 @@ function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
 end
 
 @inline nsamples(B::TrajectoryBuffer) = B.offsets[length(B) + 1]
+@inline function nsamples(B::Trajectory, i::Integer)
+    @boundscheck checkbounds(B, i)
+    B.offsets[i+1] - B.offsets[i]
+end
 
-function rollout!(policy!::P, B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Integer) where {P}
+function rollout!(policy!, B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Integer)
+    _rollout!(policy!, B, env, convert(Int, Hmax))
+    return B
+end
+
+function _rollout!(@specialize(policy!), B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Int, stopcb = () -> false)
     Hmax > 0 || throw(ArgumentError("Hmax must be > 0"))
 
     _sizehint!(B, nsamples(B) + Hmax, length(B) + 1)
     offset = B.offsets[length(B) + 1]
     @unpack S, O, A, R = B
 
-    t::Int = 0
+    t::Int = 1
     done::Bool = false
-    while t < Hmax && !done
-        t += 1
-        st = S[offset + t]::SubArray
-        ot = O[offset + t]::SubArray
-        at = A[offset + t]::SubArray
+    st = S[offset + t]::SubArray
+    ot = O[offset + t]::SubArray
+    getstate!(st, env)
+    getobservation!(ot, env)
+    while true
+        stopcb() && return 0
 
-        getstate!(st, env)
-        getobservation!(ot, env)
+        at = A[offset + t]::SubArray
         policy!(at, st, ot)
         R[offset+t] = getreward(st, at, ot, env)
 
         setaction!(env, at)
         step!(env)
-        done = isdone(st, ot, env)
-    end
-    B.len += 1
-    getstate!(B.sT[length(B)], env)
-    getobservation!(B.oT[length(B)], env)
-    B.done[length(B)] = done
-    B.offsets[length(B)+1] = B.offsets[length(B)] + t
+        t += 1
 
-    return B
+        st = S[offset + t]::SubArray
+        ot = O[offset + t]::SubArray
+        getstate!(st, env)
+        getobservation!(ot, env)
+
+        done = isdone(st, ot, env)
+
+        (t > Hmax || done) && break
+    end
+
+    B.len += 1
+    B.sT[length(B)] = S[offset + t]
+    B.oT[length(B)] = O[offset + t]
+    B.done[length(B)] = done
+    B.offsets[length(B)+1] = B.offsets[length(B)] + t - 1
+
+    return t - 1
 end
+
 
 
 function collate(Bs::AbsVec{T}, env::AbstractEnvironment, nsamples::Integer) where {T<:TrajectoryBuffer}
@@ -260,6 +281,8 @@ function collate!(
         push!(dest, τ′)
         togo -= length(τ′)
     end
+
+    truncate!(dest)
 
     return dest
 end

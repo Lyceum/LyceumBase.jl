@@ -20,7 +20,7 @@ end
 @testset "single threaded" begin
     ntimesteps = 200
     env_kwargs = (max_length = 50, reward_scale = 5)
-    sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(;env_kwargs...), n))
+    sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(; env_kwargs...), n))
 
     i = 1
     B = sample(sampler, ntimesteps, reset! = reset!, nthreads = 1) do a, s, o
@@ -58,7 +58,10 @@ end
     @test all(τ -> τ.done, U)
 end
 
-@testset "multi-threaded (nthreads = $nthreads)" for nthreads in (Threads.nthreads(), div(Threads.nthreads(), 2))
+@testset "multi-threaded (nthreads = $nthreads)" for nthreads in (
+    Threads.nthreads(),
+    div(Threads.nthreads(), 2),
+)
     if Threads.nthreads() < 2
         @warn "Cannot test EnvironmentSampler multi-threading with Threads.nthreads() < 2"
     end
@@ -69,7 +72,7 @@ end
         step_hook = _ -> isodd(Threads.threadid()) && busyloop(0.001),
     )
     ntimesteps = 5 * Threads.nthreads() * env_kwargs.max_length
-    sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(;env_kwargs...), n))
+    sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(; env_kwargs...), n))
 
     tcounts = zeros(Int, Threads.nthreads())
     B = sample(sampler, ntimesteps, reset! = reset!, nthreads = nthreads) do a, s, o
@@ -100,10 +103,15 @@ end
     end
     @test all(τ -> τ.done, U)
 
-    # test that work was divided equally amongst threads
-    nonzero_tcounts = filter(!iszero, tcounts)
-    @test length(nonzero_tcounts) == nthreads
-    @test all(isequal(first(nonzero_tcounts)), nonzero_tcounts)
+    nonempty = filter(B -> length(B) > 0, sampler.buffers)
+    # test that all threads were utilized
+    @test length(nonempty) == nthreads
+    @test begin
+        minn, maxx = extrema(map(length, nonempty))
+        @info "yo" minn maxx
+        # test that the number of trajectories collected by each thread differs by at most 2
+        maxx - minn <= 2
+    end
 end
 
 end # module
