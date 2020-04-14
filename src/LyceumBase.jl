@@ -1,21 +1,17 @@
 module LyceumBase
 
-using AutoHashEquals
 using Adapt
+using AutoHashEquals
 
 using Base: @propagate_inbounds
 using Base.Threads: Atomic, atomic_add!, atomic_sub!
 
 using Dates
-using DocStringExtensions
 using Distributions: Distributions, Sampleable, sample, sample!
+using DocStringExtensions
 using FastClosures: @closure
 using Future: randjump
-using InteractiveUtils
-using JLSO
 using LinearAlgebra
-using LibGit2
-using Logging
 using LyceumCore
 using MacroTools
 using Parameters
@@ -23,16 +19,14 @@ using Pkg
 using Printf: @sprintf
 using Random
 using Reexport
+using Shapes
 
 using SpecialArrays
 using SpecialArrays: True, False
 
-using Shapes
 using StaticArrays
 using UnicodePlots: UnicodePlots
-using UniversalLogger
 using UnsafeArrays
-import UniversalLogger: finish!
 
 
 ####
@@ -84,12 +78,7 @@ include("trajectory.jl")
 export EnvironmentSampler, sample, sample!
 include("environmentsampler.jl")
 
-include("projectmeta.jl")
-
 export Line, termplot
 include("plotting.jl")
-
-export Experiment, finish!
-include("experiment.jl")
 
 end # module
