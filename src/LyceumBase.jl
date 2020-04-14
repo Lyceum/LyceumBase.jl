@@ -1,14 +1,14 @@
 module LyceumBase
 
-using AutoHashEquals
 using Adapt
+using AutoHashEquals
 
 using Base: @propagate_inbounds
 using Base.Threads: Atomic, atomic_add!, atomic_sub!
 
 using Dates
-using DocStringExtensions
 using Distributions: Distributions, Sampleable, sample, sample!
+using DocStringExtensions
 using FastClosures: @closure
 using Future: randjump
 using LinearAlgebra
@@ -19,16 +19,14 @@ using Pkg
 using Printf: @sprintf
 using Random
 using Reexport
+using Shapes
 
 using SpecialArrays
 using SpecialArrays: True, False
 
-using Shapes
 using StaticArrays
 using UnicodePlots: UnicodePlots
-using UniversalLogger
 using UnsafeArrays
-import UniversalLogger: finish!
 
 
 ####
