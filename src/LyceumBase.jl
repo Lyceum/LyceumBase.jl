@@ -11,11 +11,7 @@ using DocStringExtensions
 using Distributions: Distributions, Sampleable, sample, sample!
 using FastClosures: @closure
 using Future: randjump
-using InteractiveUtils
-using JLSO
 using LinearAlgebra
-using LibGit2
-using Logging
 using LyceumCore
 using MacroTools
 using Parameters
@@ -84,12 +80,7 @@ include("trajectory.jl")
 export EnvironmentSampler, sample, sample!
 include("environmentsampler.jl")
 
-include("projectmeta.jl")
-
 export Line, termplot
 include("plotting.jl")
-
-export Experiment, finish!
-include("experiment.jl")
 
 end # module
