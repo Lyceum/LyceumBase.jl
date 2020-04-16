@@ -2,6 +2,6 @@ module TestLyceumBase
 
 include("preamble.jl")
 
-@includetests "LyceumBase"
+@includetests "LyceumBase.jl"
 
 end # module
