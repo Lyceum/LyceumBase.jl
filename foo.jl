@@ -10,20 +10,55 @@ using Random
 using Shapes
 using Test
 using BenchmarkTools
+using Profile
 include("./test/toyenv.jl")
 
-ntimesteps = 50 * Threads.nthreads()
-#env_kwargs = (max_length = 50, reward_scale = 5, step_hook = _ -> isodd(Threads.threadid()) && busyloop(0.001))
-env_kwargs = (max_length = 50, reward_scale = 5, step_hook = _ -> busyloop(3e-5))
-#env_kwargs = (max_length = 50, reward_scale = 5, step_hook = _ -> busyloop(3e-4))
+using StructArrays
+using SpecialArrays
+
+env_kwargs = (max_length = 10, reward_scale = 5, step_hook = _ -> busyloop(3e-5))
+ntimesteps = env_kwargs.max_length * Threads.nthreads() * 10
 sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(; env_kwargs...), n))
-B1 = sample((a,o) -> a, sampler, ntimesteps, reset! = reset!, nthreads = 1)
-B2 = sample((a,o) -> a, sampler, ntimesteps, reset! = reset!)
-if true
-b1 = @benchmark sample((a,o) -> a, $sampler, $ntimesteps, reset! = reset!, nthreads=1) evals=1 samples=80
+B = TrajectoryBuffer(ToyEnv(;env_kwargs...), sizehint = 1024)
+println("------------------------")
+@info "YOOO"
+sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!, Hmax=env_kwargs.max_length)
+@info map(LyceumBase.nsamples, sampler.buffers)
+
+
+B2 = TrajectoryBuffer(ToyEnv(;env_kwargs...), sizehint = ntimesteps)
+LyceumBase.collate!(B2, sampler.buffers, ntimesteps)
+@btime begin
+    LyceumBase.collate!(_B, $sampler.buffers, $ntimesteps)
+end evals=1 samples=100 setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), sizehint = ntimesteps))
+
+if false
+b1 = @benchmark begin
+    sample!(_B, (a,o) -> a, $sampler, $ntimesteps, reset! = reset!, Hmax=$env_kwargs.max_length, nthreads=1)
+end evals=1 samples=80 setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), sizehint = ntimesteps))
+#end setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), sizehint = 1))
 display(b1)
-b2 = @benchmark sample((a,o) -> a, $sampler, $ntimesteps, reset! = reset!) evals=1 samples=300
+
+b2 = @benchmark begin
+    sample!(_B, (a,o) -> a, $sampler, $ntimesteps, reset! = reset!, Hmax=$env_kwargs.max_length)
+end evals=1 samples=300 setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), sizehint = ntimesteps))
+#end setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), sizehint = 1))
 display(b2)
+
 @info mean(b1.times) / mean(b2.times)
 end
+
+if false
+sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
+sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
+sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
+Profile.clear()
+@profile begin
+    for i=1:100
+        sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
+    end
 end
+Profile.print()
+end
+
+end # end module

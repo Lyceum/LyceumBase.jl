@@ -35,8 +35,7 @@ end
         rand(3),
         rand(3),
         [true, false, true],
-        [0, 1, 3, 6],
-        3,
+        [1, 2, 4, 7],
     )
     @test length(B) == 3
     @test nsamples(B) == 6

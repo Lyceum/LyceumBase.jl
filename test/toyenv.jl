@@ -12,7 +12,8 @@ LyceumBase.statespace(::ToyEnv) = VectorShape(Int, 1)
 LyceumBase.getstate!(s, e::ToyEnv) = s .= e.s
 LyceumBase.setstate!(e::ToyEnv, s) = (e.s = s[]; e)
 
-LyceumBase.observationspace(::ToyEnv) = VectorShape(Int, 1)
+#LyceumBase.observationspace(::ToyEnv) = VectorShape(Int, 64^2)
+LyceumBase.observationspace(::ToyEnv) = VectorShape(Int, 100)
 LyceumBase.getobservation!(o, e::ToyEnv) = o .= e.t
 
 LyceumBase.actionspace(::ToyEnv) = VectorShape(Int, 1)
@@ -41,7 +42,7 @@ function LyceumBase.step!(e::ToyEnv)
     return e
 end
 
-LyceumBase.isdone(s, o, e::ToyEnv) = o[] >= e.max_length
+LyceumBase.isdone(s, o, e::ToyEnv) = e.t >= e.max_length
 
 Base.time(e::ToyEnv) = e.t
 LyceumBase.timestep(e::ToyEnv) = e.dt
