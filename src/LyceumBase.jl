@@ -12,7 +12,6 @@ using DocStringExtensions
 using FastClosures: @closure
 using Future: randjump
 using LinearAlgebra
-using LyceumCore
 using MacroTools
 using Parameters
 using Pkg
@@ -27,6 +26,9 @@ using SpecialArrays: True, False
 using StaticArrays
 using UnicodePlots: UnicodePlots
 using UnsafeArrays
+
+
+include("util.jl")
 
 
 ####

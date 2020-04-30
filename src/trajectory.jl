@@ -329,7 +329,7 @@ function collate!(dest::TrajectoryBuffer, Bs::AbsVec{<:TrajectoryBuffer}, nsampl
 end
 
 
-function asvec(A::AbsArr{<:Any,L}) where {L}
+function asvec(A::AbstractArray{<:Any,L}) where {L}
     alongs = (ntuple(_ -> True(), Val(L - 1))..., False())
     SlicedArray(A, alongs)
 end

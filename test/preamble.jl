@@ -6,5 +6,3 @@ using Shapes
 using Test
 
 using LyceumBase
-
-include("util.jl")
