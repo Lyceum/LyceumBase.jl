@@ -476,8 +476,10 @@ deps = ["LinearAlgebra", "Random"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialArrays]]
-deps = ["Adapt", "DocStringExtensions", "LyceumCore", "LyceumDevTools", "MacroTools", "Requires", "Shapes", "StaticNumbers", "UnsafeArrays", "Zygote"]
-git-tree-sha1 = "c2fb9f47d757c0e76b529eca454fc8d2adb28316"
+deps = ["Adapt", "DocStringExtensions", "MacroTools", "Requires", "Shapes", "StaticNumbers", "UnsafeArrays", "Zygote"]
+git-tree-sha1 = "c2dac630249f2c33f328ace4608adc71c74c7db2"
+repo-rev = "master"
+repo-url = "https://github.com/Lyceum/SpecialArrays.jl.git"
 uuid = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
 version = "0.1.1"
 
