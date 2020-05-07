@@ -9,13 +9,14 @@ using Base.Threads: Atomic, atomic_add!, atomic_sub!
 using Dates
 using Distributions: Distributions, Sampleable, sample, sample!
 using DocStringExtensions
-using FastClosures: @closure
+using ElasticArrays
+using FastClosures
 using Future: randjump
 using LinearAlgebra
 using MacroTools
 using Parameters
 using Pkg
-using Printf: @sprintf
+using Printf
 using Random
 using Reexport
 using Shapes

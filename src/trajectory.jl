@@ -80,6 +80,9 @@ struct TrajectoryBuffer{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVe
     end
 end
 
+_getindextype(A::AbstractArray, I::Tuple) = @inbounds typeof(A[I...])
+_getindextype(A::AbstractArray, I...) = _getindextype(A, I)
+
 function TrajectoryBuffer(
     env::AbstractEnvironment;
     dtype::Maybe{DataType} = nothing,
@@ -91,30 +94,33 @@ function TrajectoryBuffer(
         asvec(ElasticArray(undef, sp.statespace, sizehint)),
         asvec(ElasticArray(undef, sp.observationspace, sizehint)),
         asvec(ElasticArray(undef, sp.actionspace, sizehint)),
+        # TODO once support for non-scalar rewards is defined.
         Array(undef, sp.rewardspace, sizehint),
         asvec(ElasticArray(undef, sp.statespace, 0)),
         asvec(ElasticArray(undef, sp.observationspace, 0)),
         Bool[],
-        Int[1],
+        Int[1], # TODO firstindex?
     )
 end
 
+asvec(A::AbstractVector) = A
+function asvec(A::AbstractArray{<:Any,L}) where {L}
+    alongs = (ntuple(_ -> True(), Val(L - 1))..., False())
+    SlicedArray(A, alongs)
+end
+
+# TODO remove once battle tested
 function _check_consistency(B::TrajectoryBuffer)
     if !(length(B.S) == length(B.O) == length(B.A) == length(B.R))
-        throw(DimensionMismatch("Lengths of S, O, A, and R do not match"))
+        internalerror("Lengths of S, O, A, and R do not match.")
     end
+    #if !(length(B.sT) == length(B.oT) == length(B.done) == length(B.offsets) - 1) # TODO
     if !(length(B.sT) == length(B.oT) == length(B.done))
-        throw(DimensionMismatch("Lengths of sT, oT, and done do not match"))
+        internalerror("Lengths of sT, oT, and done do not match")
     end
-    #@info "" nsamples(B) length(B.S) length(B) length(B.sT)
-    #@info length(B.S) < nsamples(B)
-    #@info length(B.sT) < length(B)
-    #if length(B.S) < nsamples(B) || length(B.sT) < length(B)
-    #    error("Internal error. Please file a bug report")
-    #end
-    os = B.offsets
-    if !(length(os) > 0 && os[1] == 1 && all(i -> os[i-1] < os[i], eachindex(os)[2:end]))
-        throw(DimensionMismatch("Invalid offsets"))
+    offs = B.offsets
+    if !(length(offs) > 0 && offs[1] == 1 && all(i -> offs[i-1] < offs[i], eachindex(offs)[2:end]))
+        internalerror("Invalid offsets")
     end
     return nothing
 end
@@ -131,28 +137,47 @@ end
 
 Base.IndexStyle(::Type{<:TrajectoryBuffer}) = IndexLinear()
 
-function Base.push!(B::TrajectoryBuffer, τ::Trajectory)
-    len_τ = length(τ) # TODO 0-len traj?
-    offset = _preallocate_trajectory!(B, len_τ)
 
-    copyto!(B.S, offset, τ.S, firstindex(τ.S), len_τ)
-    copyto!(B.O, offset, τ.O, firstindex(τ.O), len_τ)
-    copyto!(B.A, offset, τ.A, firstindex(τ.A), len_τ)
-    copyto!(B.R, offset, τ.R, firstindex(τ.R), len_τ)
-    B.sT[length(B)] = τ.sT
-    B.oT[length(B)] = τ.oT
-    B.done[length(B)] = τ.done
+function Base.push!(dest::TrajectoryBuffer, src::Trajectory)
+    append!(dest.S, src.S)
+    append!(dest.O, src.O)
+    append!(dest.A, src.A)
+    append!(dest.R, src.R)
+    push!(dest.oT, src.oT)
+    push!(dest.sT, src.sT)
+    push!(dest.done, src.done)
+    push!(dest.offsets, last(dest.offsets) + length(src))
+    _check_consistency(dest)
+    return dest
+end
 
+function Base.append!(B::TrajectoryBuffer, iter::TrajectoryBuffer)
+    append!(B.S, iter.S)
+    append!(B.O, iter.O)
+    append!(B.A, iter.A)
+    append!(B.R, iter.R)
+    append!(B.oT, iter.oT)
+    append!(B.sT, iter.sT)
+    append!(B.done, iter.done)
+
+    n = length(B.offsets)
+    resize!(B.offsets, n + length(iter.offsets) - 1)
+    for i = eachindex(iter.offsets)[1:end-1]
+        B.offsets[n+i] = B.offsets[n+i-1] + iter.offsets[i+1] - iter.offsets[i]
+    end
     _check_consistency(B)
     return B
 end
 
 function Base.append!(B::TrajectoryBuffer, iter)
-    for τ in iter
-        push!(B, τ)
+    for item in iter
+        push!(B, item)
     end
     return B
 end
+
+
+
 
 function Base.empty!(B::TrajectoryBuffer)
     _resize!(B, 0, 0)
@@ -282,24 +307,6 @@ function _rollout!(
     return t
 end
 
-function Base.append!(dest::TrajectoryBuffer, src::TrajectoryBuffer)
-    _sizehint!(dest, nsamples(dest) + nsamples(src), length(dest) + length(src))
-    # MUCH FASTER IF  DO APPEND HERE
-    offset = dest.offsets[end]
-    copyto!(dest.S, offset, src.S, firstindex(src.S), nsamples(src))
-    copyto!(dest.O, offset, src.O, firstindex(src.O), nsamples(src))
-    copyto!(dest.A, offset, src.A, firstindex(src.A), nsamples(src))
-    copyto!(dest.R, offset, src.R, firstindex(src.R), nsamples(src))
-    copyto!(dest.sT, length(dest) + 1, src.sT, firstindex(src.sT), length(src))
-    copyto!(dest.oT, length(dest) + 1, src.oT, firstindex(src.oT), length(src))
-
-    for i = eachindex(src.offsets)[2:end]
-        l = src.offsets[i] - src.offsets[i - 1]
-        push!(dest.offsets, dest.offsets[end] + l)
-    end
-    _check_consistency(dest)
-    return dest
-end
 
 
 function collate(Bs::AbsVec{<:TrajectoryBuffer}, env::AbstractEnvironment, nsamples::Integer)
@@ -346,12 +353,3 @@ function collate!(dest::TrajectoryBuffer, Bs::AbsVec{<:TrajectoryBuffer}, n::Int
 
     #return dest
 end
-
-
-function asvec(A::AbstractArray{<:Any,L}) where {L}
-    alongs = (ntuple(_ -> True(), Val(L - 1))..., False())
-    SlicedArray(A, alongs)
-end
-
-_getindextype(A::AbstractArray, I::Tuple) = typeof(A[I...])
-_getindextype(A::AbstractArray, I...) = _getindextype(A, I)
