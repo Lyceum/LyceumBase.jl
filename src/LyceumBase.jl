@@ -36,7 +36,7 @@ include("util.jl")
 ####
 
 """
-    $(SIGNATURES)
+    tconstruct(T::Type, n::Integer, args...; kwargs...)
 
 Return a `AbstractVector` of `n` instances of `T`. By default, this returns
 `[T(args...; kwargs...) for _=1:n], but this function can be extended for types that can share
