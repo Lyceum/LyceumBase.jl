@@ -51,7 +51,8 @@ Base.length(τ::Trajectory) = (checkrep(τ); length(τ.A))
 #### TrajectoryBuffer
 ####
 
-struct TrajectoryBuffer{SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec}
+const VoA = AbstractVector{<:AbstractArray}
+@auto_hash_equals struct TrajectoryBuffer{SS<:VoA,OO<:VoA,AA<:VoA,RR<:AbstractVector{<:Real}}
     S::SS
     O::OO
     A::AA
@@ -69,7 +70,7 @@ struct TrajectoryBuffer{SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec}
         oT::OO,
         done::Vector{Bool},
         offsets::Vector{Int},
-    ) where {SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec}
+    ) where {SS<:VoA,OO<:VoA,AA<:VoA,RR<:AbstractVector{<:Real}}
         Base.require_one_based_indexing(S, O, A, R, sT, oT)
         B = new{SS,OO,AA,RR}(S, O, A, R, sT, oT, done, offsets)
         checkrep(B)
@@ -85,21 +86,18 @@ function TrajectoryBuffer(
     sizehint >= 0 || throw(ArgumentError("sizehint must be ≥ 0"))
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
     TrajectoryBuffer(
-        asvec(ElasticArray(undef, sp.statespace, sizehint)),
-        asvec(ElasticArray(undef, sp.observationspace, sizehint)),
-        asvec(ElasticArray(undef, sp.actionspace, sizehint)),
+        _asvec(ElasticArray(undef, sp.statespace, sizehint)),
+        _asvec(ElasticArray(undef, sp.observationspace, sizehint)),
+        _asvec(ElasticArray(undef, sp.actionspace, sizehint)),
         Array(undef, sp.rewardspace, sizehint),
-        asvec(ElasticArray(undef, sp.statespace, 0)),
-        asvec(ElasticArray(undef, sp.observationspace, 0)),
+        _asvec(ElasticArray(undef, sp.statespace, 0)),
+        _asvec(ElasticArray(undef, sp.observationspace, 0)),
         Bool[],
         Int[0],
     )
 end
 
-function asvec(A::AbstractArray{<:Any,L}) where {L}
-    alongs = (ntuple(_ -> True(), Val(L - 1))..., False())
-    SlicedArray(A, alongs)
-end
+_asvec(A::AbstractArray{<:Any,L}) where {L} = SpecialArrays.slice_inner(A, Val(L-1))
 
 function checkrep(B::TrajectoryBuffer)
     if !(length(B.S) == length(B.O) == length(B.A) == length(B.R))
@@ -127,8 +125,22 @@ end
 
 Base.empty!(B::TrajectoryBuffer) = resize!(B.offsets, 1)
 
-function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
+function truncate!(B::TrajectoryBuffer)
+    nsamp = nsamples(B)
+    ntraj = length(B)
+    resize!(B.S, nsamp)
+    resize!(B.O, nsamp)
+    resize!(B.A, nsamp)
+    resize!(B.R, nsamp)
+    resize!(B.sT, ntraj)
+    resize!(B.oT, ntraj)
+    resize!(B.done, ntraj)
+    resize!(B.offsets, ntraj + 1)
     checkrep(B)
+    return B
+end
+
+function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
     if length(B.S) < nsamples
         l = nextpow(2, nsamples)
         resize!(B.S, l)
@@ -142,23 +154,28 @@ function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
         resize!(B.oT, l)
         resize!(B.done, l)
     end
+    checkrep(B)
     return B
 end
 
 """
-    $(TYPEDSIGNATURES)
+    $(SIGNATURES)
 
 Rollout the actions computed by `policy!` on `env`, starting at whatever state `env` is currently
 in, for `Hmax` timesteps or until `isdone(st, ot, env)` returns `true` and store the resultant
 trajectory in `B`. `policy!` should be a function of the form `policy!(at, ot)` which computes an
 action given the current observation `ot` and stores it in `at`.
 
-See also: [`sample!`](@ref), [`sample`](@ref).
+See also: [`TrajectoryBuffer`](@ref), [`rollout`](@ref), [`sample`](@ref), [`sample!`](@ref)
 """
 function rollout!(policy!, B::TrajectoryBuffer, env::AbstractEnvironment, Hmax::Integer)
     _rollout!(policy!, B, env, convert(Int, Hmax))
     truncate!(B)
     return B
+end
+
+function rollout(policy!, env::AbstractEnvironment, Hmax::Integer)
+    rollout!(policy!, TrajectoryBuffer(env, sizehint = Hmax), env, Hmax)
 end
 
 function _rollout!(
@@ -218,8 +235,6 @@ function _rollout!(
 
     return t - 1
 end
-
-
 
 function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}, n::Integer)
     n >= 0 || argerror("n must be ≥ 0")
@@ -296,7 +311,7 @@ function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}
     internalerror()
 end
 
-function finish(B::TrajectoryBuffer)
+function StructArrays.StructArray(B::TrajectoryBuffer)
     S = BatchedVector(B.S, B.offsets)
     O = BatchedVector(B.O, B.offsets)
     A = BatchedVector(B.A, B.offsets)
@@ -307,7 +322,3 @@ function finish(B::TrajectoryBuffer)
     T = Trajectory{eltype(S),eltype(O),eltype(A),eltype(R),eltype(sT),eltype(oT)}
     return StructArray{T}((S, O, A, R, sT, oT, done))
 end
-
-
-_getindextype(A::AbstractArray, I::Tuple) = typeof(A[I...])
-_getindextype(A::AbstractArray, I...) = _getindextype(A, I)

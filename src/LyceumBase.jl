@@ -76,10 +76,10 @@ include("threading.jl")
 export SPoint3D, MPoint3D
 include("geometry.jl")
 
-export Trajectory, TrajectoryBuffer, rollout!
+export Trajectory, TrajectoryBuffer, rollout!, rollout
 include("trajectory.jl")
 
-export EnvironmentSampler, sample, sample!
+export EnvironmentSampler, sample!, sample
 include("environmentsampler.jl")
 
 export Line, termplot

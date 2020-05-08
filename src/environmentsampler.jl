@@ -1,7 +1,7 @@
 struct EnvironmentSampler{E<:AbstractEnvironment,B<:TrajectoryBuffer}
     environments::Vector{E}
     buffers::Vector{B}
-    function EnvironmentSampler(env_tconstructor; dtype::Maybe{DataType} = nothing)
+    function EnvironmentSampler(env_tconstructor; dtype::Maybe{Type} = nothing)
         nt = Threads.nthreads()
         envs = [env_tconstructor(nt)...]
         bufs = [TrajectoryBuffer(first(envs), dtype = dtype) for _ = 1:nt]
@@ -30,32 +30,32 @@ function Distributions.sample!(
     policy!,
     B::TrajectoryBuffer,
     sampler::EnvironmentSampler,
-    nsamples::Integer;
+    n::Integer;
     reset! = randreset!,
     Hmax::Integer = nsamples,
     nthreads::Integer = Threads.nthreads(),
     truncate::Bool = true,
 )
-    0 < nsamples || throw(ArgumentError("nsamples must be > 0"))
-    0 < Hmax <= nsamples || throw(ArgumentError("Hmax must be in range (0, nsamples]"))
+    n > 0 || argerror("n must be > 0")
+    0 < Hmax <= n || argerror("Hmax must be in range (0, nsamples]")
     if !(0 < nthreads <= Threads.nthreads())
-        throw(ArgumentError("nthreads must be in range (0, Threads.nthreads()]"))
+        argerror("nthreads must be in range (0, Threads.nthreads()]")
     end
 
+    # TODO
     foreach(empty!, sampler.buffers)
 
     if nthreads == 1 # short circuit to avoid threading overhead
-        _sample(sampler, policy!, reset!, nsamples, Hmax)
+        _sample(sampler, policy!, reset!, n, Hmax)
     else
-        _threaded_sample(sampler, policy!, reset!, nsamples, Hmax, nthreads)
+        _threaded_sample(sampler, policy!, reset!, n, Hmax, nthreads)
     end
 
-    collate!(B, sampler.buffers, nsamples)
-    return finish(B)
+    # TODO test
+    ns = truncate ? n : sum(nsamples, sampler.buffers)
+    collate!(B, sampler.buffers, ns)
+    return B
 end
-
-
-
 
 function _sample(
     sampler::EnvironmentSampler,
