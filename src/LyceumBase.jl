@@ -9,21 +9,21 @@ using Base.Threads: Atomic, atomic_add!, atomic_sub!
 using Dates
 using Distributions: Distributions, Sampleable, sample, sample!
 using DocStringExtensions
-using FastClosures: @closure
+using ElasticArrays
 using Future: randjump
 using LinearAlgebra
 using MacroTools
 using Parameters
 using Pkg
-using Printf: @sprintf
+using Printf
 using Random
-using Reexport
 using Shapes
 
 using SpecialArrays
 using SpecialArrays: True, False
 
 using StaticArrays
+using StructArrays
 using UnicodePlots: UnicodePlots
 using UnsafeArrays
 
@@ -64,7 +64,7 @@ include("abstractenvironment.jl")
 ####
 
 include("setfield.jl")
-@reexport using .SetfieldImpl
+using .SetfieldImpl: @set!
 
 include("math.jl")
 
@@ -74,10 +74,10 @@ include("threading.jl")
 export SPoint3D, MPoint3D
 include("geometry.jl")
 
-export Trajectory, TrajectoryBuffer, rollout!
+export Trajectory, TrajectoryBuffer, ntrajectories, nsamples, rollout!, rollout
 include("trajectory.jl")
 
-export EnvironmentSampler, sample, sample!
+export EnvironmentSampler
 include("environmentsampler.jl")
 
 export Line, termplot

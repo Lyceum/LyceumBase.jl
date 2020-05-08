@@ -18,20 +18,21 @@ function unwraptraj(τ::Trajectory)
 end
 
 @testset "single threaded" begin
-    ntimesteps = 200
-    env_kwargs = (max_length = 50, reward_scale = 5)
+    ntimesteps = 30
+    env_kwargs = (max_length = 10, reward_scale = 5)
     sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(; env_kwargs...), n))
 
     i = 1
-    B = sample(sampler, ntimesteps, reset! = reset!, nthreads = 1) do a, o
+    B = rollout(sampler, ntimesteps, reset! = reset!, nthreads = 1) do a, o
         a .= i
         i += 1
     end
+    A = StructArray(B)
 
-    @test length(B) == ntimesteps / env_kwargs.max_length
-    @test all(τ -> length(τ) == env_kwargs.max_length, B)
+    @test length(A) == ntimesteps / env_kwargs.max_length
+    @test all(τ -> length(τ) == env_kwargs.max_length, A)
 
-    U = map(unwraptraj, B)
+    U = map(unwraptraj, A)
 
     @test all(U) do τ
         τ.S == [0, cumsum(τ.A[1:end-1])...]
@@ -41,7 +42,7 @@ end
     end
     @test let start = 1
         all(U) do τ
-            pass = τ.A == start:start+length(τ)-1
+            pass = τ.A == start:(start+length(τ)-1)
             start += length(τ)
             pass
         end
@@ -75,15 +76,16 @@ end
     sampler = EnvironmentSampler(n -> ntuple(i -> ToyEnv(; env_kwargs...), n))
 
     tcounts = zeros(Int, Threads.nthreads())
-    B = sample(sampler, ntimesteps, reset! = reset!, nthreads = nthreads) do a, o
+    B = rollout(sampler, ntimesteps, reset! = reset!, nthreads = nthreads) do a, o
         a .= Threads.threadid()
         tcounts[Threads.threadid()] += 1
     end
+    A = StructArray(B)
 
-    @test length(B) == ntimesteps / env_kwargs.max_length
-    @test all(τ -> length(τ) == env_kwargs.max_length, B)
+    @test length(A) == ntimesteps / env_kwargs.max_length
+    @test all(τ -> length(τ) == env_kwargs.max_length, A)
 
-    U = map(unwraptraj, B)
+    U = map(unwraptraj, A)
 
     @test all(U) do τ
         τ.S == [0, cumsum(τ.A[1:end-1])...]
@@ -103,11 +105,11 @@ end
     end
     @test all(τ -> τ.done, U)
 
-    nonempty = filter(B -> length(B) > 0, sampler.buffers)
+    nonempty = filter(B -> ntrajectories(B) > 0, sampler.buffers)
     # test that all threads were utilized
     @test length(nonempty) == nthreads
     @test begin
-        minn, maxx = extrema(map(length, nonempty))
+        minn, maxx = extrema(map(ntrajectories, nonempty))
         # test that the number of trajectories collected by each thread differs by at most 2
         maxx - minn <= 2
     end

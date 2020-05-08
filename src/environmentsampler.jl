@@ -1,7 +1,7 @@
 struct EnvironmentSampler{E<:AbstractEnvironment,B<:TrajectoryBuffer}
     environments::Vector{E}
     buffers::Vector{B}
-    function EnvironmentSampler(env_tconstructor; dtype::Maybe{DataType} = nothing)
+    function EnvironmentSampler(env_tconstructor; dtype::Maybe{Type} = nothing)
         nt = Threads.nthreads()
         envs = [env_tconstructor(nt)...]
         bufs = [TrajectoryBuffer(first(envs), dtype = dtype) for _ = 1:nt]
@@ -10,49 +10,53 @@ struct EnvironmentSampler{E<:AbstractEnvironment,B<:TrajectoryBuffer}
 end
 
 
-function Distributions.sample(
+function rollout!(
     policy!,
-    sampler::EnvironmentSampler,
-    nsamples::Integer;
-    dtype::Maybe{DataType} = nothing,
-    kwargs...,
-)
-    sample!(
-        TrajectoryBuffer(first(sampler.environments), dtype = dtype),
-        policy!,
-        sampler,
-        nsamples;
-        kwargs...,
-    )
-end
-
-function Distributions.sample!(
     B::TrajectoryBuffer,
-    policy!,
     sampler::EnvironmentSampler,
-    nsamples::Integer;
+    n::Integer;
     reset! = randreset!,
-    Hmax::Integer = nsamples,
+    Hmax::Integer = n,
     nthreads::Integer = Threads.nthreads(),
+    truncate::Bool = true,
 )
-    0 < nsamples || throw(ArgumentError("nsamples must be > 0"))
-    0 < Hmax <= nsamples || throw(ArgumentError("Hmax must be in range (0, nsamples]"))
+    n > 0 || argerror("n must be > 0")
+    0 < Hmax <= n || argerror("Hmax must be in range (0, nsamples]")
     if !(0 < nthreads <= Threads.nthreads())
-        throw(ArgumentError("nthreads must be in range (0, Threads.nthreads()]"))
+        argerror("nthreads must be in range (0, Threads.nthreads()]")
     end
 
     foreach(empty!, sampler.buffers)
 
     if nthreads == 1 # short circuit to avoid threading overhead
-        _sample(sampler, policy!, reset!, nsamples, Hmax)
+        _rollout(sampler, policy!, reset!, n, Hmax)
     else
-        _threaded_sample(sampler, policy!, reset!, nsamples, Hmax, nthreads)
+        _threaded_rollout(sampler, policy!, reset!, n, Hmax, nthreads)
     end
 
-    return collate!(B, sampler.buffers, nsamples)
+    # TODO test
+    ns = truncate ? n : sum(nsamples, sampler.buffers)
+    collate!(B, sampler.buffers, ns)
+    return B
 end
 
-function _sample(
+function rollout(
+    policy!,
+    sampler::EnvironmentSampler,
+    n::Integer;
+    dtype::Maybe{DataType} = nothing,
+    kwargs...,
+)
+    rollout!(
+        policy!,
+        TrajectoryBuffer(first(sampler.environments), dtype = dtype),
+        sampler,
+        n;
+        kwargs...,
+    )
+end
+
+function _rollout(
     sampler::EnvironmentSampler,
     policy!,
     reset!::R,
@@ -71,7 +75,7 @@ function _sample(
     return nothing
 end
 
-function _threaded_sample(
+function _threaded_rollout(
     sampler::EnvironmentSampler,
     policy!,
     reset!,
@@ -83,6 +87,7 @@ function _threaded_sample(
     iters = [Atomic{Int}(0) for _ = 1:nthreads]
     togo = Atomic{Int}(n)
 
+    # TODO remove this once 1.3 is dropped
     @static if VERSION < v"1.4"
         Threads.@sync for i = 1:nthreads
             Threads.@spawn _thread_worker(
@@ -111,8 +116,7 @@ function _threaded_sample(
     return nothing
 end
 
-
-@noinline function _thread_worker(
+function _thread_worker(
     sampler::EnvironmentSampler,
     policy!,
     @specialize(reset!),
@@ -124,7 +128,7 @@ end
     tid = Threads.threadid()
     env = sampler.environments[tid]
     B = sampler.buffers[tid]
-    stopcb = @closure () -> togo[] <= 0
+    stopcb = () -> togo[] <= 0
     t = time()
     while togo[] > 0
         if iter[] <= minimum(getindex, iters)
@@ -134,7 +138,7 @@ end
             atomic_sub!(togo, len)
             t = time()
         else
-            time() - t > 5 && error("Timeout on thread $tid. Please file a bug report.")
+            time() - t > 5 && internalerror("Timeout on thread $tid.")
             # See: https://github.com/JuliaLang/julia/issues/33097
             ccall(:jl_gc_safepoint, Cvoid, ())
         end

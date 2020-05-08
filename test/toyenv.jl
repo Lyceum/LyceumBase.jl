@@ -41,13 +41,15 @@ function LyceumBase.step!(e::ToyEnv)
     return e
 end
 
-LyceumBase.isdone(s, o, e::ToyEnv) = o[] >= e.max_length
+LyceumBase.isdone(s, o, e::ToyEnv) = e.t >= e.max_length
 
 Base.time(e::ToyEnv) = e.t
 LyceumBase.timestep(e::ToyEnv) = e.dt
 
+
 function busyloop(dt::Real)
     t0 = time()
     while time() - t0 < dt
+        ccall(:jl_gc_safepoint, Cvoid, ())
     end
 end

@@ -9,4 +9,7 @@ macro mustimplement(sig)
     :($(esc(sig)) = error("must implement ", $(string(sig))))
 end
 
-argerror(s::AbstractString) = throw(ArgumentError(s))
+@noinline argerror(msg::AbstractString) = throw(ArgumentError(msg))
+@noinline dimerror(msg::AbstractString) = throw(DimensionMismatch(msg))
+@noinline internalerror(msg::AbstractString) = error("Internal error: $msg\nPlease file a bug.")
+@noinline internalerror() = error("Internal error. Please file a bug.")
