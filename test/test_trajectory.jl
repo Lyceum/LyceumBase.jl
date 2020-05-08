@@ -2,7 +2,7 @@ module TestTrajectory
 
 include("preamble.jl")
 include("toyenv.jl")
-using LyceumBase: asvec, nsamples, collate!, finish
+using LyceumBase: asvec, nsamples, collate!
 
 function makedata(e::AbstractEnvironment, lengths::Vector{Int})
     τs = [
@@ -56,7 +56,7 @@ end
     e = ToyEnv()
     let lens = [2,3], data = makedata(e, lens)
         B = TrajectoryBuffer(e, sizehint=0)
-        A = finish(collate!(B, data.Bs, sum(lens)))
+        A = StructArray(collate!(B, data.Bs, sum(lens)))
         @test nsamples(B) == sum(lens)
         @test length(B) == length(lens)
 
@@ -107,7 +107,7 @@ end
     end
     let
         B = TrajectoryBuffer(e, sizehint=123)
-        A = finish(collate!(B, TrajectoryBuffer[], 0))
+        A = StructArray(collate!(B, TrajectoryBuffer[], 0))
         @test nsamples(B) == 0
         @test length(B) == 0
         @test length(B.S) == 0

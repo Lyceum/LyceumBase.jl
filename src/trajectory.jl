@@ -86,18 +86,18 @@ function TrajectoryBuffer(
     sizehint >= 0 || throw(ArgumentError("sizehint must be ≥ 0"))
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
     TrajectoryBuffer(
-        _asvec(ElasticArray(undef, sp.statespace, sizehint)),
-        _asvec(ElasticArray(undef, sp.observationspace, sizehint)),
-        _asvec(ElasticArray(undef, sp.actionspace, sizehint)),
+        asvec(ElasticArray(undef, sp.statespace, sizehint)),
+        asvec(ElasticArray(undef, sp.observationspace, sizehint)),
+        asvec(ElasticArray(undef, sp.actionspace, sizehint)),
         Array(undef, sp.rewardspace, sizehint),
-        _asvec(ElasticArray(undef, sp.statespace, 0)),
-        _asvec(ElasticArray(undef, sp.observationspace, 0)),
+        asvec(ElasticArray(undef, sp.statespace, 0)),
+        asvec(ElasticArray(undef, sp.observationspace, 0)),
         Bool[],
         Int[0],
     )
 end
 
-_asvec(A::AbstractArray{<:Any,L}) where {L} = SpecialArrays.slice_inner(A, Val(L-1))
+asvec(A::AbstractArray{<:Any,L}) where {L} = SpecialArrays.slice_inner(A, Val(L-1))
 
 function checkrep(B::TrajectoryBuffer)
     if !(length(B.S) == length(B.O) == length(B.A) == length(B.R))

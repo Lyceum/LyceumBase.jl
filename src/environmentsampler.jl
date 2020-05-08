@@ -13,7 +13,7 @@ end
 function Distributions.sample(
     policy!,
     sampler::EnvironmentSampler,
-    nsamples::Integer;
+    n::Integer;
     dtype::Maybe{DataType} = nothing,
     kwargs...,
 )
@@ -21,7 +21,7 @@ function Distributions.sample(
         policy!,
         TrajectoryBuffer(first(sampler.environments), dtype = dtype),
         sampler,
-        nsamples;
+        n;
         kwargs...,
     )
 end
@@ -32,7 +32,7 @@ function Distributions.sample!(
     sampler::EnvironmentSampler,
     n::Integer;
     reset! = randreset!,
-    Hmax::Integer = nsamples,
+    Hmax::Integer = n,
     nthreads::Integer = Threads.nthreads(),
     truncate::Bool = true,
 )
