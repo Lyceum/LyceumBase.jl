@@ -477,7 +477,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialArrays]]
 deps = ["Adapt", "Compat", "DocStringExtensions", "Requires", "UnsafeArrays", "Zygote"]
-path = "/home/colinxs/workspace/juliadev/SpecialArrays"
+git-tree-sha1 = "0ca9904c09c733a318ad95922b1d4c72a2431d2b"
+repo-rev = "master"
+repo-url = "https://github.com/Lyceum/SpecialArrays.jl.git"
 uuid = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
 version = "0.2.1"
 
