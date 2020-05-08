@@ -51,45 +51,30 @@ Base.length(τ::Trajectory) = (checkrep(τ); length(τ.A))
 #### TrajectoryBuffer
 ####
 
-mutable struct TrajectoryBuffer{T<:Trajectory,SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec,ST,OT} <:
-               AbsVec{T}
+struct TrajectoryBuffer{SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec}
     S::SS
     O::OO
     A::AA
     R::RR
-    sT::ST
-    oT::OT
+    sT::SS
+    oT::OO
     done::Vector{Bool}
     offsets::Vector{Int}
-    @inline function TrajectoryBuffer{T,SS,OO,AA,RR,ST,OT}(
-        S,
-        O,
-        A,
-        R,
-        sT,
-        oT,
-        done,
-        offsets,
-    ) where {T,SS,OO,AA,RR,ST,OT}
-        B = new(S, O, A, R, sT, oT, done, offsets)
+    function TrajectoryBuffer(
+        S::SS,
+        O::OO,
+        A::AA,
+        R::RR,
+        sT::SS,
+        oT::OO,
+        done::Vector{Bool},
+        offsets::Vector{Int},
+    ) where {SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec}
+        Base.require_one_based_indexing(S, O, A, R, sT, oT)
+        B = new{SS,OO,AA,RR}(S, O, A, R, sT, oT, done, offsets)
         checkrep(B)
         return B
     end
-end
-
-@inline function TrajectoryBuffer(
-    S::SS,
-    O::OO,
-    A::AA,
-    R::RR,
-    sT::ST,
-    oT::OT,
-    done,
-    offsets,
-) where {SS,OO,AA,RR,ST,OT}
-    I = 1:1
-    T = Trajectory{_getindextype(S, I),_getindextype(O, I),_getindextype(A, I),_getindextype(R, I)}
-    TrajectoryBuffer{T,SS,OO,AA,RR,ST,OT}(S, O, A, R, sT, oT, done, offsets)
 end
 
 function TrajectoryBuffer(
@@ -97,7 +82,7 @@ function TrajectoryBuffer(
     dtype::Maybe{DataType} = nothing,
     sizehint::Integer = 1024,
 )
-    sizehint > 0 || throw(ArgumentError("sizehint must be ≥ 0"))
+    sizehint >= 0 || throw(ArgumentError("sizehint must be ≥ 0"))
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
     TrajectoryBuffer(
         asvec(ElasticArray(undef, sp.statespace, sizehint)),
@@ -109,6 +94,11 @@ function TrajectoryBuffer(
         Bool[],
         Int[0],
     )
+end
+
+function asvec(A::AbstractArray{<:Any,L}) where {L}
+    alongs = (ntuple(_ -> True(), Val(L - 1))..., False())
+    SlicedArray(A, alongs)
 end
 
 function checkrep(B::TrajectoryBuffer)
@@ -129,72 +119,13 @@ end
 
 Base.length(B::TrajectoryBuffer) = length(B.offsets) - 1
 
-Base.size(B::TrajectoryBuffer) = (length(B), )
-
-@propagate_inbounds function Base.getindex(B::TrajectoryBuffer, i::Int)
-    range = (B.offsets[i]+1):B.offsets[i+1]
-    Trajectory(B.S[range], B.O[range], B.A[range], B.R[range], B.sT[i], B.oT[i], B.done[i])
-end
-
-Base.IndexStyle(::Type{<:TrajectoryBuffer}) = IndexLinear()
-
-Base.empty!(B::TrajectoryBuffer) = _resize!(B, 0, 0)
-
-# TODO HasLength/HasShape
-function Base.append!(B::TrajectoryBuffer, iter)
-    i = lastindex(B.offsets)
-    offset = B.offsets[i]
-    _sizehint!(B, nsamples(B) + sum(length, iter), length(B) + length(iter))
-
-    for τ::Trajectory in iter
-        len_τ = length(τ)
-
-        push!(B.offsets, offset + len_τ)
-        copyto!(B.S, offset + firstindex(B.S), τ.S, firstindex(τ.S), len_τ)
-        copyto!(B.O, offset + firstindex(B.O), τ.O, firstindex(τ.O), len_τ)
-        copyto!(B.A, offset + firstindex(B.A), τ.A, firstindex(τ.A), len_τ)
-        copyto!(B.R, offset + firstindex(B.R), τ.R, firstindex(τ.R), len_τ)
-        B.sT[length(B)] = τ.sT
-        B.oT[length(B)] = τ.oT
-        B.done[length(B)] = τ.done
-
-        offset += len_τ
-    end
-
-    checkrep(B)
-    return B
-end
-
-
-function truncate!(B::TrajectoryBuffer)
-    resize!(B.S, nsamples(B))
-    resize!(B.O, nsamples(B))
-    resize!(B.A, nsamples(B))
-    resize!(B.R, nsamples(B))
-    resize!(B.sT, length(B))
-    resize!(B.oT, length(B))
-    resize!(B.done, length(B))
-    return B
-end
-
 @inline nsamples(B::TrajectoryBuffer) = B.offsets[length(B)+1]
-@inline function nsamples(B::Trajectory, i::Integer)
-    @boundscheck checkbounds(B, i)
+@inline function nsamples(B::TrajectoryBuffer, i::Integer)
+    @boundscheck checkbounds(Base.OneTo(length(B)), i)
     B.offsets[i+1] - B.offsets[i]
 end
 
-function _resize!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
-    resize!(B.S, nsamples)
-    resize!(B.O, nsamples)
-    resize!(B.A, nsamples)
-    resize!(B.R, nsamples)
-    resize!(B.sT, ntrajectories)
-    resize!(B.oT, ntrajectories)
-    resize!(B.done, ntrajectories)
-    resize!(B.offsets, ntrajectories + 1)
-    checkrep(B)
-    return B
-end
+Base.empty!(B::TrajectoryBuffer) = resize!(B.offsets, 1)
 
 function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
     checkrep(B)
@@ -247,13 +178,16 @@ function _rollout!(
 
     t::Int = 1
     done::Bool = false
+
     # get the initial state/observation
     st = S[offset+t]::SubArray
     ot = O[offset+t]::SubArray
     getstate!(st, env)
     getobservation!(ot, env)
+
     while true
-        stopcb() && return 0 # Abandon the current rollout
+        # Abandon the current rollout. Used internally for multithreaded-sampling.
+        stopcb() && return 0
 
         # Get the policy's action for (st, ot, at)
         at = A[offset+t]::SubArray
@@ -287,38 +221,48 @@ end
 
 
 
-function collate(Bs::AbstractVector{<:TrajectoryBuffer}, env::AbstractEnvironment)
-    collate!(TrajectoryBuffer(env, sizehint = sum(nsamples, Bs)), Bs)
-end
+function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}, n::Integer)
+    n >= 0 || argerror("n must be ≥ 0")
+    ns = isempty(Bs) ? 0 : sum(nsamples, Bs)
+    n <= ns || argerror("n is greater than the number of available samples")
 
-function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}, nsamples::Integer)
+    @unpack S, O, A, R, sT, oT, done, offsets = dest
+
+    if isempty(Bs) || ns == 0
+        resize!(S, 0)
+        resize!(O, 0)
+        resize!(A, 0)
+        resize!(R, 0)
+        resize!(sT, 0)
+        resize!(oT, 0)
+        resize!(done, 0)
+        resize!(offsets, 1)
+        return dest
+    end
+
     ntraj = s = 0
     for B in Bs, i in eachindex(B.offsets)[1:end-1]
         s += B.offsets[i+1] - B.offsets[i]
         ntraj += 1
-        s >= nsamples && break
+        s >= n && break
     end
 
-    @unpack S, O, A, R, sT, oT, done, offsets = dest
-    resize!(S, nsamples)
-    resize!(O, nsamples)
-    resize!(A, nsamples)
-    resize!(R, nsamples)
+    resize!(S, n)
+    resize!(O, n)
+    resize!(A, n)
+    resize!(R, n)
     resize!(sT, ntraj)
     resize!(oT, ntraj)
     resize!(done, ntraj)
     resize!(offsets, ntraj + 1)
 
-    togo = nsamples
+    togo = n
     doffs_samp = doffs_traj = 1
     for B in Bs
         soffs_samp = 1
         for soffs_traj = eachindex(B.offsets)[1:end-1]
             len = B.offsets[soffs_traj+1] - B.offsets[soffs_traj]
-            if togo == 0
-                checkrep(dest)
-                return dest
-            elseif togo < len
+            if togo < len
                 copyto!(S, doffs_samp, B.S, soffs_samp, togo)
                 copyto!(O, doffs_samp, B.O, soffs_samp, togo)
                 copyto!(A, doffs_samp, B.A, soffs_samp, togo)
@@ -327,9 +271,6 @@ function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}
                 oT[doffs_traj] = B.O[soffs_samp + togo]
                 done[doffs_traj] = false
                 offsets[doffs_traj+1] = offsets[doffs_traj] + togo
-
-                checkrep(dest)
-                return dest
             else
                 copyto!(S, doffs_samp, B.S, soffs_samp, len)
                 copyto!(O, doffs_samp, B.O, soffs_samp, len)
@@ -345,79 +286,28 @@ function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}
                 doffs_traj += 1
                 togo -= len
             end
+            if togo == 0
+                checkrep(dest)
+                return dest
+            end
         end
     end
-
-    checkrep(dest)
-
-    return dest
+    # This shouldn't be reached
+    internalerror()
 end
 
-function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer})
-    @unpack S, O, A, R, sT, oT, done, offsets = dest
-    nsamp = sum(nsamples, Bs)
-    ntraj = sum(length, Bs)
-    resize!(S, nsamp)
-    resize!(O, nsamp)
-    resize!(A, nsamp)
-    resize!(R, nsamp)
-    resize!(sT, ntraj)
-    resize!(oT, ntraj)
-    resize!(done, ntraj)
-    resize!(offsets, ntraj + 1)
-
-    offs_samp = offs_traj = 1
-    for B in Bs
-        nsamp = nsamples(B)
-        ntraj = length(B)
-        copyto!(S, offs_samp, B.S, 1, nsamp)
-        copyto!(O, offs_samp, B.O, 1, nsamp)
-        copyto!(A, offs_samp, B.A, 1, nsamp)
-        copyto!(R, offs_samp, B.R, 1, nsamp)
-        copyto!(sT, offs_traj, B.sT, 1, ntraj)
-        copyto!(oT, offs_traj, B.oT, 1, ntraj)
-        copyto!(done, offs_traj, B.done, 1, ntraj)
-        for i = eachindex(B.offsets)[1:end-1]
-            l = B.offsets[i+1] - B.offsets[i]
-            offsets[offs_traj + i] = offsets[offs_traj + i - 1] + l
-        end
-        offs_samp += nsamp
-        offs_traj += ntraj
-    end
-
-    checkrep(dest)
-
-    return dest
+function finish(B::TrajectoryBuffer)
+    S = BatchedVector(B.S, B.offsets)
+    O = BatchedVector(B.O, B.offsets)
+    A = BatchedVector(B.A, B.offsets)
+    R = BatchedVector(B.R, B.offsets)
+    sT = B.sT
+    oT = B.oT
+    done = B.done
+    T = Trajectory{eltype(S),eltype(O),eltype(A),eltype(R),eltype(sT),eltype(oT)}
+    return StructArray{T}((S, O, A, R, sT, oT, done))
 end
 
-function truncate!(B::TrajectoryBuffer, n::Integer)
-    nextra = nsamples(B) - n
-    if nextra > 0
-        ntraj = findfirst(offs -> offs >= n, B.offsets) - 1
-        if B.offsets[ntraj+1] > n
-            B.sT[ntraj] = B.S[n + 1]
-            B.oT[ntraj] = B.O[n + 1]
-            B.done[ntraj] = false
-            B.offsets[ntraj + 1] = n
-        end
-
-        resize!(B.S, n)
-        resize!(B.O, n)
-        resize!(B.A, n)
-        resize!(B.R, n)
-        resize!(B.sT, ntraj)
-        resize!(B.oT, ntraj)
-        resize!(B.done, ntraj)
-        resize!(B.offsets, ntraj + 1)
-    end
-    return B
-end
-
-
-function asvec(A::AbstractArray{<:Any,L}) where {L}
-    alongs = (ntuple(_ -> True(), Val(L - 1))..., False())
-    SlicedArray(A, alongs)
-end
 
 _getindextype(A::AbstractArray, I::Tuple) = typeof(A[I...])
 _getindextype(A::AbstractArray, I...) = _getindextype(A, I)

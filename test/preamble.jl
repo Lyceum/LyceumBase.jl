@@ -3,6 +3,7 @@ using LinearAlgebra
 using LyceumDevTools.TestUtil
 using Random
 using Shapes
+using SpecialArrays
 using Test
 
 using LyceumBase

@@ -25,6 +25,7 @@ using SpecialArrays
 using SpecialArrays: True, False
 
 using StaticArrays
+using StructArrays
 using UnicodePlots: UnicodePlots
 using UnsafeArrays
 

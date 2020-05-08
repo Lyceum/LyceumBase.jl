@@ -51,10 +51,11 @@ function Distributions.sample!(
     end
 
     collate!(B, sampler.buffers, nsamples)
-    #collate!(B, sampler.buffers)
-    #truncate!(B, nsamples)
-    return B
+    return finish(B)
 end
+
+
+
 
 function _sample(
     sampler::EnvironmentSampler,

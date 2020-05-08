@@ -12,3 +12,4 @@ end
 argerror(msg::AbstractString) = throw(ArgumentError(msg))
 dimerror(msg::AbstractString) = throw(DimensionMismatch(msg))
 internalerror(msg::AbstractString) = error("Internal error: $msg\nPlease file a bug report.")
+internalerror() = error("Internal error. Please file a bug report.")
