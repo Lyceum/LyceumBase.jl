@@ -32,7 +32,7 @@ LyceumBase.collate!(B2, sampler.buffers, ntimesteps)
     LyceumBase.collate!(_B, $sampler.buffers, $ntimesteps)
 end evals=1 samples=100 setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), sizehint = ntimesteps))
 
-if false
+if true
 b1 = @benchmark begin
     sample!(_B, (a,o) -> a, $sampler, $ntimesteps, reset! = reset!, Hmax=$env_kwargs.max_length, nthreads=1)
 end evals=1 samples=80 setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), sizehint = ntimesteps))
@@ -46,19 +46,6 @@ end evals=1 samples=300 setup=(_B=TrajectoryBuffer(ToyEnv(;$env_kwargs...), size
 display(b2)
 
 @info mean(b1.times) / mean(b2.times)
-end
-
-if false
-sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
-sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
-sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
-Profile.clear()
-@profile begin
-    for i=1:100
-        sample!(B, (a,o) -> a, sampler, ntimesteps, reset! = reset!)
-    end
-end
-Profile.print()
 end
 
 end # end module

@@ -144,9 +144,7 @@ Base.empty!(B::TrajectoryBuffer) = _resize!(B, 0, 0)
 function Base.append!(B::TrajectoryBuffer, iter)
     i = lastindex(B.offsets)
     offset = B.offsets[i]
-    @warn B.offsets
     _sizehint!(B, nsamples(B) + sum(length, iter), length(B) + length(iter))
-    @info B.offsets
 
     for τ::Trajectory in iter
         len_τ = length(τ)
@@ -163,7 +161,6 @@ function Base.append!(B::TrajectoryBuffer, iter)
         offset += len_τ
     end
 
-    @info B.offsets
     checkrep(B)
     return B
 end
@@ -290,38 +287,134 @@ end
 
 
 
-function collate(Bs::AbsVec{<:TrajectoryBuffer}, env::AbstractEnvironment, nsamples::Integer)
-    collate!(TrajectoryBuffer(env), Bs, nsamples)
+function collate(Bs::AbstractVector{<:TrajectoryBuffer}, env::AbstractEnvironment)
+    collate!(TrajectoryBuffer(env, sizehint = sum(nsamples, Bs)), Bs)
 end
 
-function collate!(dest::TrajectoryBuffer, Bs::AbsVec{<:TrajectoryBuffer}, nsamples::Integer)
-    _sizehint!(dest, nsamples, sum(length, Bs))
-    empty!(dest)
+#function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer})
+#    @unpack S, O, A, R, sT, oT, done, offsets = dest
+#    nsamp = sum(nsamples, Bs)
+#    ntraj = sum(length, Bs)
+#    resize!(S, nsamp)
+#    resize!(O, nsamp)
+#    resize!(A, nsamp)
+#    resize!(R, nsamp)
+#    resize!(sT, ntraj)
+#    resize!(oT, ntraj)
+#    resize!(done, ntraj)
+#    resize!(offsets, ntraj + 1)
 
-    togo = nsamples
-    for B in Bs, τ in B
-        if togo == 0
-            break
-        elseif togo < length(τ)
-            τ′ = Trajectory(
-                view(τ.S, 1:togo),
-                view(τ.O, 1:togo),
-                view(τ.A, 1:togo),
-                view(τ.R, 1:togo),
-                τ.S[togo+1],
-                τ.O[togo+1],
-                false,
-            )
-        else
-            τ′ = τ
+#    traj_idx = 1
+#    for B in Bs
+#        soffs = 1
+#        for i = eachindex(B.offsets)[1:end-1]
+#            doffs = offsets[traj_idx] + 1
+#            len = B.offsets[i+1] - B.offsets[i]
+#            #@info "here" (samp_offset + firstindex(B.A)) len
+#            copyto!(S, doffs, B.S, soffs, len)
+#            copyto!(O, doffs, B.O, soffs, len)
+#            copyto!(A, doffs, B.A, soffs, len)
+#            copyto!(R, doffs, B.R, soffs, len)
+#            sT[traj_idx] = B.sT[i]
+#            oT[traj_idx] = B.oT[i]
+#            done[traj_idx] = B.done[i]
+#            soffs += len
+#            traj_idx += 1
+#            offsets[traj_idx] = offsets[traj_idx - 1] + len
+#        end
+#    end
+
+#    checkrep(dest)
+
+#    return dest
+#end
+
+function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer})
+    @unpack S, O, A, R, sT, oT, done, offsets = dest
+    nsamp = sum(nsamples, Bs)
+    ntraj = sum(length, Bs)
+    resize!(S, nsamp)
+    resize!(O, nsamp)
+    resize!(A, nsamp)
+    resize!(R, nsamp)
+    resize!(sT, ntraj)
+    resize!(oT, ntraj)
+    resize!(done, ntraj)
+    resize!(offsets, ntraj + 1)
+
+    offs_samp = offs_traj = 1
+    for B in Bs
+        nsamp = nsamples(B)
+        ntraj = length(B)
+        copyto!(S, offs_samp, B.S, 1, nsamp)
+        copyto!(O, offs_samp, B.O, 1, nsamp)
+        copyto!(A, offs_samp, B.A, 1, nsamp)
+        copyto!(R, offs_samp, B.R, 1, nsamp)
+        copyto!(sT, offs_traj, B.sT, 1, ntraj)
+        copyto!(oT, offs_traj, B.oT, 1, ntraj)
+        copyto!(done, offs_traj, B.done, 1, ntraj)
+        for i = eachindex(B.offsets)[1:end-1]
+            l = B.offsets[i+1] - B.offsets[i]
+            offsets[offs_traj + i] = offsets[offs_traj + i - 1] + l
         end
-        push!(dest, τ′)
-        togo -= length(τ′)
+        offs_samp += nsamp
+        offs_traj += ntraj
     end
 
-    truncate!(dest)
+    checkrep(dest)
 
     return dest
+end
+
+#function collate!(dest::TrajectoryBuffer, Bs::AbsVec{<:TrajectoryBuffer}, nsamples::Integer)
+#    _sizehint!(dest, nsamples, sum(length, Bs))
+#    empty!(dest)
+
+#    togo = nsamples
+#    for B in Bs, τ in B
+#        if togo == 0
+#            break
+#        elseif togo < length(τ)
+#            τ′ = Trajectory(
+#                view(τ.S, 1:togo),
+#                view(τ.O, 1:togo),
+#                view(τ.A, 1:togo),
+#                view(τ.R, 1:togo),
+#                τ.S[togo+1],
+#                τ.O[togo+1],
+#                false,
+#            )
+#        else
+#            τ′ = τ
+#        end
+#        push!(dest, τ′)
+#        togo -= length(τ′)
+#    end
+
+#    truncate!(dest)
+
+#    return dest
+#end
+
+function truncate!(B::TrajectoryBuffer, n::Integer)
+    if nsamples(B) > n
+        ntraj = findfirst(offs -> offs > n, B.offsets) - 1
+
+        B.sT[ntraj] = B.S[n + 1]
+        B.oT[ntraj] = B.O[n + 1]
+        B.done[ntraj] = false
+        B.offsets[ntraj + 1] = n
+
+        resize!(B.S, n)
+        resize!(B.O, n)
+        resize!(B.A, n)
+        resize!(B.R, n)
+        resize!(B.sT, ntraj)
+        resize!(B.oT, ntraj)
+        resize!(B.done, ntraj)
+        resize!(B.offsets, ntraj + 1)
+    end
+    return B
 end
 
 

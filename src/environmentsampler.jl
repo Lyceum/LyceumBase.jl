@@ -18,8 +18,8 @@ function Distributions.sample(
     kwargs...,
 )
     sample!(
-        TrajectoryBuffer(first(sampler.environments), dtype = dtype),
         policy!,
+        TrajectoryBuffer(first(sampler.environments), dtype = dtype),
         sampler,
         nsamples;
         kwargs...,
@@ -27,13 +27,14 @@ function Distributions.sample(
 end
 
 function Distributions.sample!(
-    B::TrajectoryBuffer,
     policy!,
+    B::TrajectoryBuffer,
     sampler::EnvironmentSampler,
     nsamples::Integer;
     reset! = randreset!,
     Hmax::Integer = nsamples,
     nthreads::Integer = Threads.nthreads(),
+    truncate::Bool = true,
 )
     0 < nsamples || throw(ArgumentError("nsamples must be > 0"))
     0 < Hmax <= nsamples || throw(ArgumentError("Hmax must be in range (0, nsamples]"))
@@ -49,7 +50,10 @@ function Distributions.sample!(
         _threaded_sample(sampler, policy!, reset!, nsamples, Hmax, nthreads)
     end
 
-    return collate!(B, sampler.buffers, nsamples)
+    #collate!(B, sampler.buffers, nsamples)
+    collate!(B, sampler.buffers)
+    #truncate && truncate!(B, nsamples)
+    return B
 end
 
 function _sample(

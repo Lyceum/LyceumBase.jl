@@ -2,7 +2,7 @@ module TestTrajectory
 
 include("preamble.jl")
 include("toyenv.jl")
-using LyceumBase: asvec, nsamples, collate
+using LyceumBase: asvec, nsamples, collate, truncate!
 
 function makedata(e::AbstractEnvironment, lengths::Vector{Int}; isdone = isodd)
     τs = [
@@ -100,8 +100,8 @@ end
         for (B, τ) in zip(Vs, τs)
             push!(B, τ)
         end
-        C = collate(Vs, e, 9)
-        @test_inferred collate(Vs, e, 9)
+        C = truncate!(collate(Vs, e), 9)
+        @test_inferred truncate!(collate(Vs, e), 9)
         @test nsamples(C) == 9
         @test C == τs
     end
@@ -111,8 +111,8 @@ end
         for (B, τ) in zip(Vs, τs)
             push!(B, τ)
         end
-        C = collate(Vs, e, 8)
-        @test_inferred collate(Vs, e, 8)
+        C = truncate!(collate(Vs, e), 8)
+        @test_inferred truncate!(collate(Vs, e), 8)
         @test nsamples(C) == 8
         @test all(C.done[1:2])
         @test C[1:2] == τs[1:2]
