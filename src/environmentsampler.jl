@@ -50,9 +50,9 @@ function Distributions.sample!(
         _threaded_sample(sampler, policy!, reset!, nsamples, Hmax, nthreads)
     end
 
-    #collate!(B, sampler.buffers, nsamples)
-    collate!(B, sampler.buffers)
-    #truncate && truncate!(B, nsamples)
+    collate!(B, sampler.buffers, nsamples)
+    #collate!(B, sampler.buffers)
+    #truncate!(B, nsamples)
     return B
 end
 
