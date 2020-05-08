@@ -140,23 +140,6 @@ function truncate!(B::TrajectoryBuffer)
     return B
 end
 
-function _sizehint!(B::TrajectoryBuffer, nsamples::Int, ntrajectories::Int)
-    if length(B.S) < nsamples
-        l = nextpow(2, nsamples)
-        resize!(B.S, l)
-        resize!(B.O, l)
-        resize!(B.A, l)
-        resize!(B.R, l)
-    end
-    if length(B.offsets) < ntrajectories + 2
-        l = nextpow(2, ntrajectories + 2)
-        resize!(B.sT, l)
-        resize!(B.oT, l)
-        resize!(B.done, l)
-    end
-    checkrep(B)
-    return B
-end
 
 """
     $(SIGNATURES)
@@ -189,7 +172,7 @@ function _rollout!(
 
     # pre-allocate for one additional trajectory with a length of Hmax + 1.
     # "+1" because of the terminal state/observation
-    _sizehint!(B, nsamples(B) + Hmax + 1, length(B) + 1)
+    _preallocate_traj!(B, Hmax + 1)
     offset = B.offsets[end]
     @unpack S, O, A, R = B
 
@@ -206,7 +189,6 @@ function _rollout!(
         # Abandon the current rollout. Used internally for multithreaded-sampling.
         stopcb() && return 0
 
-        # Get the policy's action for (st, ot, at)
         at = A[offset+t]::SubArray
         getaction!(at, env) # Fill at with env's current action for convenience
         policy!(at, ot)
@@ -234,6 +216,26 @@ function _rollout!(
     B.done[length(B)] = done
 
     return t - 1
+end
+
+function _preallocate_traj!(B::TrajectoryBuffer, H::Int)
+    nsamp = nsamples(B) + H
+    ntraj = length(B) + 1
+    if length(B.S) < nsamp
+        l = nextpow(2, nsamp)
+        resize!(B.S, l)
+        resize!(B.O, l)
+        resize!(B.A, l)
+        resize!(B.R, l)
+    end
+    if length(B.offsets) < ntraj + 2
+        l = nextpow(2, ntraj + 2)
+        resize!(B.sT, l)
+        resize!(B.oT, l)
+        resize!(B.done, l)
+    end
+    checkrep(B)
+    return B
 end
 
 function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}, n::Integer)
