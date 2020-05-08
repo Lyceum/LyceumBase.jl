@@ -128,7 +128,7 @@ function _thread_worker(
     tid = Threads.threadid()
     env = sampler.environments[tid]
     B = sampler.buffers[tid]
-    stopcb = @closure () -> togo[] <= 0
+    stopcb = () -> togo[] <= 0
     t = time()
     while togo[] > 0
         if iter[] <= minimum(getindex, iters)

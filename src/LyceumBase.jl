@@ -10,7 +10,6 @@ using Dates
 using Distributions: Distributions, Sampleable, sample, sample!
 using DocStringExtensions
 using ElasticArrays
-using FastClosures
 using Future: randjump
 using LinearAlgebra
 using MacroTools
@@ -18,7 +17,6 @@ using Parameters
 using Pkg
 using Printf
 using Random
-using Reexport
 using Shapes
 
 using SpecialArrays
@@ -66,7 +64,7 @@ include("abstractenvironment.jl")
 ####
 
 include("setfield.jl")
-@reexport using .SetfieldImpl
+using .SetfieldImpl: @set!
 
 include("math.jl")
 

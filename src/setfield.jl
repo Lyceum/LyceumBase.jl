@@ -9,9 +9,6 @@ using Setfield: ComposedLens, ConstIndexLens, DynamicIndexLens, IndexLens
 using Setfield: Lens, PropertyLens, set
 
 
-export @set!, prefermutation
-
-
 const SupportedIndexLens = Union{ConstIndexLens,DynamicIndexLens,IndexLens}
 
 
