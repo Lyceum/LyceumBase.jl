@@ -49,13 +49,14 @@ end
     @test_inferred TrajectoryBuffer(e)
     B = TrajectoryBuffer(e; sizehint = 123)
     @test length(B.S) == length(B.O) == length(B.A) == length(B.R) == 123
-    @test length(B.sT) == length(B.oT) == length(B.done) == length(B.offsets) - 1 == 0
+    @test length(B.sT) == length(B.oT) == length(B.done)
+    @test length(B.offsets) - 1 == 0
 end
 
 @testset "collate" begin
     e = ToyEnv()
     let lens = [2,3], data = makedata(e, lens)
-        B = TrajectoryBuffer(e, sizehint=0)
+        B = TrajectoryBuffer(e)
         A = StructArray(collate!(B, data.Bs, sum(lens)))
         @test nsamples(B) == sum(lens)
         @test ntrajectories(B) == length(lens)
@@ -107,7 +108,7 @@ end
     end
     let
         B = TrajectoryBuffer(e, sizehint=123)
-        A = StructArray(collate!(B, TrajectoryBuffer[], 0))
+        collate!(B, TrajectoryBuffer[], 0)
         @test nsamples(B) == 0
         @test ntrajectories(B) == 0
         @test length(B.S) == 0

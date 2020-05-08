@@ -83,17 +83,17 @@ function TrajectoryBuffer(
     dtype::Maybe{DataType} = nothing,
     sizehint::Integer = 1024,
 )
-    sizehint >= 0 || throw(ArgumentError("sizehint must be ≥ 0"))
+    sizehint > 0 || argerror("sizehint must be > 0")
     sp = dtype === nothing ? spaces(env) : adapt(dtype, spaces(env))
+    sizehint_traj = max(1, div(sizehint, 10)) # a heuristic
     TrajectoryBuffer(
         asvec(ElasticArray(undef, sp.statespace, sizehint)),
         asvec(ElasticArray(undef, sp.observationspace, sizehint)),
         asvec(ElasticArray(undef, sp.actionspace, sizehint)),
         Array(undef, sp.rewardspace, sizehint),
-        # TODO non-zero sizehint?
-        asvec(ElasticArray(undef, sp.statespace, 0)),
-        asvec(ElasticArray(undef, sp.observationspace, 0)),
-        Bool[],
+        asvec(ElasticArray(undef, sp.statespace, sizehint_traj)),
+        asvec(ElasticArray(undef, sp.observationspace, sizehint_traj)),
+        Vector{Bool}(undef, sizehint_traj),
         Int[0],
     )
 end
