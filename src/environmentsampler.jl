@@ -10,23 +10,7 @@ struct EnvironmentSampler{E<:AbstractEnvironment,B<:TrajectoryBuffer}
 end
 
 
-function Distributions.sample(
-    policy!,
-    sampler::EnvironmentSampler,
-    n::Integer;
-    dtype::Maybe{DataType} = nothing,
-    kwargs...,
-)
-    sample!(
-        policy!,
-        TrajectoryBuffer(first(sampler.environments), dtype = dtype),
-        sampler,
-        n;
-        kwargs...,
-    )
-end
-
-function Distributions.sample!(
+function rollout!(
     policy!,
     B::TrajectoryBuffer,
     sampler::EnvironmentSampler,
@@ -42,13 +26,12 @@ function Distributions.sample!(
         argerror("nthreads must be in range (0, Threads.nthreads()]")
     end
 
-    # TODO
     foreach(empty!, sampler.buffers)
 
     if nthreads == 1 # short circuit to avoid threading overhead
-        _sample(sampler, policy!, reset!, n, Hmax)
+        _rollout(sampler, policy!, reset!, n, Hmax)
     else
-        _threaded_sample(sampler, policy!, reset!, n, Hmax, nthreads)
+        _threaded_rollout(sampler, policy!, reset!, n, Hmax, nthreads)
     end
 
     # TODO test
@@ -57,7 +40,23 @@ function Distributions.sample!(
     return B
 end
 
-function _sample(
+function rollout(
+    policy!,
+    sampler::EnvironmentSampler,
+    n::Integer;
+    dtype::Maybe{DataType} = nothing,
+    kwargs...,
+)
+    rollout!(
+        policy!,
+        TrajectoryBuffer(first(sampler.environments), dtype = dtype),
+        sampler,
+        n;
+        kwargs...,
+    )
+end
+
+function _rollout(
     sampler::EnvironmentSampler,
     policy!,
     reset!::R,
@@ -76,7 +75,7 @@ function _sample(
     return nothing
 end
 
-function _threaded_sample(
+function _threaded_rollout(
     sampler::EnvironmentSampler,
     policy!,
     reset!,
@@ -88,6 +87,7 @@ function _threaded_sample(
     iters = [Atomic{Int}(0) for _ = 1:nthreads]
     togo = Atomic{Int}(n)
 
+    # TODO remove this once 1.3 is dropped
     @static if VERSION < v"1.4"
         Threads.@sync for i = 1:nthreads
             Threads.@spawn _thread_worker(
@@ -116,8 +116,7 @@ function _threaded_sample(
     return nothing
 end
 
-
-@noinline function _thread_worker(
+function _thread_worker(
     sampler::EnvironmentSampler,
     policy!,
     @specialize(reset!),
@@ -139,7 +138,7 @@ end
             atomic_sub!(togo, len)
             t = time()
         else
-            time() - t > 5 && error("Timeout on thread $tid. Please file a bug report.")
+            time() - t > 5 && internalerror("Timeout on thread $tid.")
             # See: https://github.com/JuliaLang/julia/issues/33097
             ccall(:jl_gc_safepoint, Cvoid, ())
         end

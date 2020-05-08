@@ -13,7 +13,6 @@ LyceumBase.getstate!(s, e::ToyEnv) = s .= e.s
 LyceumBase.setstate!(e::ToyEnv, s) = (e.s = s[]; e)
 
 LyceumBase.observationspace(::ToyEnv) = VectorShape(Int, 1)
-#LyceumBase.observationspace(::ToyEnv) = VectorShape(Int, 100) # TODO
 LyceumBase.getobservation!(o, e::ToyEnv) = o .= e.t
 
 LyceumBase.actionspace(::ToyEnv) = VectorShape(Int, 1)
@@ -46,6 +45,7 @@ LyceumBase.isdone(s, o, e::ToyEnv) = e.t >= e.max_length
 
 Base.time(e::ToyEnv) = e.t
 LyceumBase.timestep(e::ToyEnv) = e.dt
+
 
 function busyloop(dt::Real)
     t0 = time()

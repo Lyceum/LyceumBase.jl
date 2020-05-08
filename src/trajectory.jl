@@ -11,14 +11,14 @@
     oT::OT
     done::Bool
     @inline function Trajectory{SS,OO,AA,RR,ST,OT}(
-        S,
-        O,
-        A,
-        R,
-        sT,
-        oT,
-        done,
-    ) where {SS,OO,AA,RR,ST,OT}
+        S::SS,
+        O::OO,
+        A::AA,
+        R::RR,
+        sT::ST,
+        oT::OT,
+        done::Bool,
+    ) where {SS<:AbsVec,OO<:AbsVec,AA<:AbsVec,RR<:AbsVec,ST,OT}
         τ = new(S, O, A, R, sT, oT, done)
         checkrep(τ)
         return τ
@@ -90,6 +90,7 @@ function TrajectoryBuffer(
         asvec(ElasticArray(undef, sp.observationspace, sizehint)),
         asvec(ElasticArray(undef, sp.actionspace, sizehint)),
         Array(undef, sp.rewardspace, sizehint),
+        # TODO non-zero sizehint?
         asvec(ElasticArray(undef, sp.statespace, 0)),
         asvec(ElasticArray(undef, sp.observationspace, 0)),
         Bool[],
@@ -99,7 +100,7 @@ end
 
 asvec(A::AbstractArray{<:Any,L}) where {L} = SpecialArrays.slice_inner(A, Val(L-1))
 
-function checkrep(B::TrajectoryBuffer)
+@noinline function checkrep(B::TrajectoryBuffer)
     if !(length(B.S) == length(B.O) == length(B.A) == length(B.R))
         throw(DimensionMismatch("Lengths of S, O, A, and R do not match"))
     end
@@ -107,19 +108,19 @@ function checkrep(B::TrajectoryBuffer)
         throw(DimensionMismatch("Lengths of sT, oT, and done do not match"))
     end
     length(B.S) < nsamples(B) && error("invalid dimensions")
-    if !(B.offsets[1] == 0 && all(i -> B.offsets[i-1] < B.offsets[i], 2:length(B)))
+    if !(B.offsets[1] == 0 && all(i -> B.offsets[i-1] < B.offsets[i], 2:ntrajectories(B)))
         throw(DimensionMismatch("Invalid offsets"))
     end
-    length(B) < 0 && throw(DomainError("length must be > 0"))
+    ntrajectories(B) < 0 && throw(DomainError("length must be > 0"))
     return B
 end
 
 
-Base.length(B::TrajectoryBuffer) = length(B.offsets) - 1
+ntrajectories(B::TrajectoryBuffer) = length(B.offsets) - 1
 
-@inline nsamples(B::TrajectoryBuffer) = B.offsets[length(B)+1]
+nsamples(B::TrajectoryBuffer) = B.offsets[ntrajectories(B)+1]
 @inline function nsamples(B::TrajectoryBuffer, i::Integer)
-    @boundscheck checkbounds(Base.OneTo(length(B)), i)
+    @boundscheck checkbounds(Base.OneTo(ntrajectories(B)), i)
     B.offsets[i+1] - B.offsets[i]
 end
 
@@ -127,7 +128,7 @@ Base.empty!(B::TrajectoryBuffer) = resize!(B.offsets, 1)
 
 function truncate!(B::TrajectoryBuffer)
     nsamp = nsamples(B)
-    ntraj = length(B)
+    ntraj = ntrajectories(B)
     resize!(B.S, nsamp)
     resize!(B.O, nsamp)
     resize!(B.A, nsamp)
@@ -168,28 +169,29 @@ function _rollout!(
     Hmax::Int,
     stopcb = () -> false,
 )
-    Hmax > 0 || throw(ArgumentError("Hmax must be > 0"))
+    Hmax > 0 || argerror("Hmax must be > 0")
+
+    @unpack S, O, A, R = B
 
     # pre-allocate for one additional trajectory with a length of Hmax + 1.
     # "+1" because of the terminal state/observation
     _preallocate_traj!(B, Hmax + 1)
     offset = B.offsets[end]
-    @unpack S, O, A, R = B
 
     t::Int = 1
     done::Bool = false
 
     # get the initial state/observation
-    st = S[offset+t]::SubArray
-    ot = O[offset+t]::SubArray
+    st = S[offset+t]
+    ot = O[offset+t]
     getstate!(st, env)
     getobservation!(ot, env)
 
     while true
-        # Abandon the current rollout. Used internally for multithreaded-sampling.
+        # Abandon the current rollout. Used internally for multithreaded sampling.
         stopcb() && return 0
 
-        at = A[offset+t]::SubArray
+        at = A[offset+t]
         getaction!(at, env) # Fill at with env's current action for convenience
         policy!(at, ot)
         R[offset+t] = getreward(st, at, ot, env)
@@ -198,8 +200,9 @@ function _rollout!(
         step!(env)
         t += 1
 
-        st = S[offset+t]::SubArray
-        ot = O[offset+t]::SubArray
+        # Get the next state, which may be a terminal state.
+        st = S[offset+t]
+        ot = O[offset+t]
         getstate!(st, env)
         getobservation!(ot, env)
 
@@ -211,16 +214,16 @@ function _rollout!(
     end
 
     push!(B.offsets, B.offsets[end] + t - 1)
-    B.sT[length(B)] = S[offset+t]
-    B.oT[length(B)] = O[offset+t]
-    B.done[length(B)] = done
+    B.sT[ntrajectories(B)] = S[offset+t]
+    B.oT[ntrajectories(B)] = O[offset+t]
+    B.done[ntrajectories(B)] = done
 
     return t - 1
 end
 
 function _preallocate_traj!(B::TrajectoryBuffer, H::Int)
     nsamp = nsamples(B) + H
-    ntraj = length(B) + 1
+    ntraj = ntrajectories(B) + 1
     if length(B.S) < nsamp
         l = nextpow(2, nsamp)
         resize!(B.S, l)
@@ -237,6 +240,7 @@ function _preallocate_traj!(B::TrajectoryBuffer, H::Int)
     checkrep(B)
     return B
 end
+
 
 function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}, n::Integer)
     n >= 0 || argerror("n must be ≥ 0")
@@ -309,9 +313,11 @@ function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}
             end
         end
     end
+
     # This shouldn't be reached
     internalerror()
 end
+
 
 function StructArrays.StructArray(B::TrajectoryBuffer)
     S = BatchedVector(B.S, B.offsets)
