@@ -98,7 +98,7 @@ function TrajectoryBuffer(
     )
 end
 
-asvec(A::AbstractArray{<:Any,L}) where {L} = SpecialArrays.slice_inner(A, Val(L-1))
+asvec(A::AbstractArray{<:Any,L}) where {L} = SpecialArrays.slice(A, Val(L-1))
 
 @noinline function checkrep(B::TrajectoryBuffer)
     if !(length(B.S) == length(B.O) == length(B.A) == length(B.R))

@@ -64,9 +64,9 @@ version = "0.5.9"
 
 [[CSTParser]]
 deps = ["Tokenize"]
-git-tree-sha1 = "46ad13fcdde8dcb144f019b08bbd36be04cd429b"
+git-tree-sha1 = "a2f9009a81b92d078a682d4a8576adc1f8176e90"
 uuid = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
-version = "2.2.1"
+version = "2.3.0"
 
 [[CommonSubexpressions]]
 deps = ["Test"]
@@ -76,9 +76,9 @@ version = "0.2.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "fecfed095803b86cc06fd7ee09d3d2c98fad4dac"
+git-tree-sha1 = "b0ae6133d365da2dbc88bc43d997b1b95c9df5f6"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "3.9.0"
+version = "3.9.1"
 
 [[CompilerSupportLibraries_jll]]
 deps = ["Libdl", "Pkg"]
@@ -138,9 +138,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[Distributions]]
 deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "55e1de79bd2c397e048ca47d251f8fa70e530550"
+git-tree-sha1 = "c4ed10355637fcb0725dc6a27060f74df24f13cd"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.22.6"
+version = "0.23.2"
 
 [[DocStringExtensions]]
 deps = ["LibGit2", "Markdown", "Pkg", "Test"]
@@ -274,12 +274,12 @@ uuid = "e5bd5517-2193-49f0-ba9c-d5a8508cb639"
 version = "0.1.1"
 
 [[LyceumDevTools]]
-deps = ["Base64", "BenchmarkTools", "Dates", "Distributed", "GitHub", "HTTP", "JuliaFormatter", "LibGit2", "LyceumBase", "LyceumCore", "MacroTools", "Markdown", "Parameters", "Pkg", "PkgTemplates", "Random", "Reexport", "Registrator", "RegistryTools", "Shapes", "Test"]
-git-tree-sha1 = "13804060536481362aa8504809b5b57442c5c6a6"
+deps = ["Base64", "BenchmarkTools", "Dates", "Distributed", "GitHub", "HTTP", "JuliaFormatter", "LibGit2", "LyceumBase", "LyceumCore", "MacroTools", "Markdown", "Parameters", "Pkg", "PkgTemplates", "Random", "Registrator", "RegistryTools", "Shapes", "Test", "UnPack"]
+git-tree-sha1 = "70c176f5a151f9fc9880f7f1f37488e8bab756cc"
 repo-rev = "master"
 repo-url = "https://github.com/Lyceum/LyceumDevTools.jl.git"
 uuid = "fd23256c-5a67-41c4-8f5a-c8cf5526e505"
-version = "0.4.0"
+version = "0.5.0"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -404,12 +404,6 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
-[[Reexport]]
-deps = ["Pkg"]
-git-tree-sha1 = "7b1d07f411bc8ddb7977ec7f377b97b158514fe0"
-uuid = "189a3867-3050-52da-a836-e630ba90ab69"
-version = "0.2.0"
-
 [[Registrator]]
 deps = ["AutoHashEquals", "Base64", "Dates", "Distributed", "FileWatching", "GitForge", "GitHub", "HTTP", "JSON", "LibGit2", "Logging", "MbedTLS", "Mustache", "Mux", "Pkg", "RegistryTools", "Serialization", "Sockets", "TimeToLive", "UUIDs", "ZMQ"]
 git-tree-sha1 = "fc03fdec0e29ab36e3e994a08cb8272f53f65354"
@@ -477,11 +471,11 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialArrays]]
 deps = ["Adapt", "Compat", "DocStringExtensions", "Requires", "UnsafeArrays", "Zygote"]
-git-tree-sha1 = "0ca9904c09c733a318ad95922b1d4c72a2431d2b"
+git-tree-sha1 = "8644204fb5eddce01b85aba6e7991194b5a52271"
 repo-rev = "master"
 repo-url = "https://github.com/Lyceum/SpecialArrays.jl.git"
 uuid = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
-version = "0.2.1"
+version = "0.3.0-DEV"
 
 [[SpecialFunctions]]
 deps = ["OpenSpecFun_jll"]
