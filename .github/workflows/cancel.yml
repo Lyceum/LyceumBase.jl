@@ -1,0 +1,19 @@
+name: Cleanup Duplicate Jobs
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron:  '*/15 * * * *'
+  repository_dispatch:
+
+jobs:
+  Cancel:
+    # Prevent forks from running this to be nice
+    #if: github.repository == 'foo-org/my-repo'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ci.yml

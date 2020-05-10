@@ -6,7 +6,7 @@ on:
   repository_dispatch:
 
 jobs:
-  Compat:
+  UpdateCompat:
     runs-on: ubuntu-latest
     steps:
       - name: Add registries
