@@ -263,7 +263,7 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[LyceumBase]]
 deps = ["Adapt", "AutoHashEquals", "BangBang", "Dates", "Distributions", "DocStringExtensions", "ElasticArrays", "Future", "LinearAlgebra", "MacroTools", "Parameters", "Pkg", "Printf", "Random", "Setfield", "Shapes", "SpecialArrays", "StaticArrays", "StructArrays", "UnicodePlots", "UnsafeArrays"]
-path = "/tmp/jl_Uym2Gn/repo/"
+path = ".."
 uuid = "db31fed1-ca1e-4084-8a49-12fae1996a55"
 version = "0.3.0-DEV"
 
