@@ -269,7 +269,7 @@ version = "0.3.0-DEV"
 
 [[LyceumDevTools]]
 deps = ["Base64", "BenchmarkTools", "Dates", "Distributed", "GitHub", "HTTP", "JuliaFormatter", "LibGit2", "LyceumBase", "MacroTools", "Markdown", "Pkg", "PkgTemplates", "Random", "Registrator", "RegistryTools", "Shapes", "Test", "UUIDs", "UnPack"]
-git-tree-sha1 = "eba93458983b51f1733fbf2bd332819737d71eed"
+git-tree-sha1 = "4d33b79d0ec94868f2565b1d8123cfe7d768012a"
 repo-rev = "master"
 repo-url = "https://github.com/Lyceum/LyceumDevTools.jl.git"
 uuid = "fd23256c-5a67-41c4-8f5a-c8cf5526e505"
@@ -465,7 +465,7 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialArrays]]
 deps = ["Adapt", "Compat", "DocStringExtensions", "Requires", "UnsafeArrays", "Zygote"]
-git-tree-sha1 = "f5e0689d1bfee016448e8f739d4e2664f5b1fe6e"
+git-tree-sha1 = "48fde15f8f0f388cc5419b335bf477858d49a1c8"
 repo-rev = "master"
 repo-url = "https://github.com/Lyceum/SpecialArrays.jl.git"
 uuid = "dced3ab1-7816-4ad4-9c7c-956aa26e9cbf"
