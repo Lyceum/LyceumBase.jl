@@ -442,9 +442,11 @@ version = "0.6.0"
 
 [[Shapes]]
 deps = ["Adapt", "MacroTools", "Random", "Requires", "StaticArrays", "UnsafeArrays"]
-git-tree-sha1 = "12588058c4dc3590d8d19d5071e140d9b8924854"
+git-tree-sha1 = "a25a1183ae53fc6381c5d1d8070a740ff7098dc9"
+repo-rev = "master"
+repo-url = "https://github.com/Lyceum/Shapes.jl.git"
 uuid = "175de200-b73b-11e9-28b7-9b5b306cec37"
-version = "0.2.3"
+version = "0.3.0-DEV"
 
 [[SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
