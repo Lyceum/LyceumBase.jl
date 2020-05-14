@@ -11,6 +11,7 @@ using Distributions: Distributions, Sampleable, sample, sample!
 using DocStringExtensions
 using ElasticArrays
 using Future: randjump
+using IterTools
 using LinearAlgebra
 using MacroTools
 using Parameters
@@ -80,7 +81,6 @@ include("trajectory.jl")
 export EnvironmentSampler
 include("environmentsampler.jl")
 
-export Line, termplot
 include("plotting.jl")
 
 end # module
