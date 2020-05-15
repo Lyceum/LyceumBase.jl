@@ -292,6 +292,7 @@ function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}
                 oT[doffs_traj] = B.O[soffs_samp + togo]
                 done[doffs_traj] = false
                 offsets[doffs_traj+1] = offsets[doffs_traj] + togo
+                togo = 0
             else
                 copyto!(S, doffs_samp, B.S, soffs_samp, len)
                 copyto!(O, doffs_samp, B.O, soffs_samp, len)
@@ -307,6 +308,7 @@ function collate!(dest::TrajectoryBuffer, Bs::AbstractVector{<:TrajectoryBuffer}
                 doffs_traj += 1
                 togo -= len
             end
+
             if togo == 0
                 checkrep(dest)
                 return dest
