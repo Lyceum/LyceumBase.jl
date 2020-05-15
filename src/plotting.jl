@@ -54,3 +54,10 @@ function termplot(
 
     return plt
 end
+
+function termplot(ys::AbstractVector{<:AbstractVector}; kwargs...)
+    termplot(map(eachindex, ys), ys; kwargs...)
+end
+
+termplot(x::AbstractVector, y::AbstractVector; kwargs...) = termplot([x], [y]; kwargs...)
+termplot(y::AbstractVector; kwargs...) = termplot([y]; kwargs...)
