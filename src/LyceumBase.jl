@@ -14,7 +14,6 @@ using Future: randjump
 using IterTools
 using LinearAlgebra
 using MacroTools
-using Parameters
 using Pkg
 using Printf
 using Random
@@ -27,6 +26,7 @@ using StaticArrays
 using StructArrays
 using UnicodePlots: UnicodePlots
 using UnsafeArrays
+using Unpack
 
 
 include("util.jl")
