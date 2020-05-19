@@ -44,7 +44,7 @@ end
     return τ
 end
 
-Base.length(τ::Trajectory) = (checkrep(τ); length(τ.A))
+Base.length(τ::Trajectory) = (checkrep(τ); length(τ.S))
 
 
 ####
