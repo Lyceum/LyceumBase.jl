@@ -26,7 +26,7 @@ using StaticArrays
 using StructArrays
 using UnicodePlots: UnicodePlots
 using UnsafeArrays
-using Unpack
+using UnPack
 
 
 include("util.jl")
