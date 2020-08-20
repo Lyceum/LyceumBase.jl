@@ -1,7 +1,7 @@
 name = "LyceumBase"
 uuid = "db31fed1-ca1e-4084-8a49-12fae1996a55"
 authors = ["Colin Summers", "The Contributors of LyceumBase"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -34,14 +34,14 @@ UniversalLogger = "5c5e3362-9445-4819-9f95-51c44c51adeb"
 UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
 
 [compat]
-Adapt = "1"
+Adapt = "1, 2.0"
 BangBang = "0.3"
 BenchmarkTools = "0.5"
-Distributions = "0.22"
+Distributions = "0.23"
 DocStringExtensions = "0.8"
 ElasticArrays = "1"
 EllipsisNotation = "0.4"
-JLSO = "2.1"
+JLSO = "2.3"
 MacroTools = "0.5"
 Parameters = "0.12"
 Reexport = "0.2"

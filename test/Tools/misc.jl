@@ -51,7 +51,7 @@ end
     end
     @test let A = rand(100), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
         B = perturbn(r2, A)
-        perturb!(r1, A) == B
+        perturbn!(r1, A) == B
     end
     @test let A = rand(100), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
         d = Uniform(-0.1, 0.2)

@@ -228,11 +228,11 @@ end
 
 
 perturb!(A::AbstractArray) = perturb!(Random.default_rng(), A)
-perturbn!(A::AbstractArray) = perturb!(Random.default_rng(), A)
+perturbn!(A::AbstractArray) = perturbn!(Random.default_rng(), A)
 perturb!(s::Sampleable, A::AbstractArray) = perturb!(Random.default_rng(), s, A)
 
 perturb(rng::AbstractRNG, A::AbstractArray) = perturb!(rng, copy(A))
-perturbn(rng::AbstractRNG, A::AbstractArray) = perturb!(rng, copy(A))
+perturbn(rng::AbstractRNG, A::AbstractArray) = perturbn!(rng, copy(A))
 perturb(rng::AbstractRNG, s::Sampleable, A::AbstractArray) = perturb!(rng, s, copy(A))
 
 function perturb!(rng::AbstractRNG, A::AbstractArray)
