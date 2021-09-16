@@ -154,24 +154,22 @@ end
 function _rolloutstep!(actionfn!::F, traj::ElasticBuffer, env::AbstractEnvironment) where {F}
     grow!(traj)
     t = lastindex(traj)
-    @uviews traj begin
-        st = view(traj.states, :, t)
-        ot = view(traj.observations, :, t)
-        at = view(traj.actions, :, t)
+    st = view(traj.states, :, t)
+    ot = view(traj.observations, :, t)
+    at = view(traj.actions, :, t)
 
-        getstate!(st, env)
-        getobs!(ot, env)
-        getaction!(at, env)
+    getstate!(st, env)
+    getobs!(ot, env)
+    getaction!(at, env)
 
-        actionfn!(at, st, ot)
-        setaction!(env, at)
+    actionfn!(at, st, ot)
+    setaction!(env, at)
 
-        step!(env)
+    step!(env)
 
-        traj.rewards[t] = getreward(st, at, ot, env)
-        traj.evaluations[t] = geteval(st, at, ot, env)
-        return isdone(st, at, ot, env)
-    end
+    traj.rewards[t] = getreward(st, at, ot, env)
+    traj.evaluations[t] = geteval(st, at, ot, env)
+    return isdone(st, at, ot, env)
 end
 
 function _terminate_trajectory!(
@@ -182,13 +180,11 @@ function _terminate_trajectory!(
 )
     grow!(term)
     i = lastindex(term)
-    @uviews term begin
-        thistraj = view(term, i)
-        getstate!(vec(thistraj.states), env) # TODO
-        getobs!(vec(thistraj.observations), env) # TODO
-        term.dones[i] = done
-        term.lengths[i] = trajlength
-    end
+    thistraj = view(term, i)
+    getstate!(vec(thistraj.states), env) # TODO
+    getobs!(vec(thistraj.observations), env) # TODO
+    term.dones[i] = done
+    term.lengths[i] = trajlength
     term
 end
 
@@ -237,7 +233,7 @@ function _collate!(sampler::EnvSampler, N::Integer, copy::Bool)
         termbuf = buf.terminal
         from = firstindex(trajbuf)
 
-        @uviews trajbuf termbuf for episode_idx in eachindex(termbuf)
+        for episode_idx in eachindex(termbuf)
             togo = N - count
             togo == 0 && return batch
 

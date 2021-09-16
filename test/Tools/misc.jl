@@ -37,8 +37,8 @@ end
     @test let A = rand(100), B = copy(A), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
         perturb!(r1, A) == B .+ rand(r2, length(B))
     end
-    @test let A = rand(100), B = copy(A), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
-        perturbn!(r1, A) == B .+ randn(r2, length(B))
+    @test let A = rand(50), B = copy(A), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
+        perturbn!(r1, A) == B + [ randn(r2) for i=1:length(B) ]
     end
     @test let A = rand(100), B = copy(A), r1 = MersenneTwister(1), r2 = MersenneTwister(1)
         d = Uniform(-0.1, 0.2)

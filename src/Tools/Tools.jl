@@ -7,7 +7,7 @@ using Test: @test
 
 # 3rd party
 import UnicodePlots
-using UnsafeArrays, StaticArrays, EllipsisNotation, ElasticArrays, MacroTools, JLSO, Parameters, Adapt
+using StaticArrays, EllipsisNotation, ElasticArrays, MacroTools, JLSO, Parameters, Adapt
 using Distributions: Sampleable
 using BenchmarkTools: @benchmark
 

@@ -26,7 +26,7 @@ Base.@propagate_inbounds function Base.setindex!(
 ) where {names}
     @boundscheck (checkbounds(b, I); checksetindex(b, vals))
     foreachfield_tabular(
-        (x, v) -> (@inbounds copyto!(uview(x, .., I), v)),
+        (x, v) -> (@inbounds copyto!(view(x, .., I), v)),
         (fieldarrays(b), vals),
     )
     b
@@ -122,6 +122,7 @@ end
     :(ElasticBufferView{$names,$T,$A}(fieldarrays, length))
 end
 
+#=
 @generated function UnsafeArrays.unsafe_uview(b::ElasticBuffer{names,T,A}) where {names,T,A}
     ex = Expr(:tuple)
     for i = 1:length(names)
@@ -133,6 +134,7 @@ end
         ElasticBufferView(NamedTuple{$names}($ex), l)
     end
 end
+=#
 
 Base.@propagate_inbounds function Base.unsafe_view(
     b::AbstractElasticBuffer{names,T,A},

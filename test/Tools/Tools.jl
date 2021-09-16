@@ -1,5 +1,5 @@
 using LyceumBase.Tools, Test
-using Shapes, ElasticArrays, UnsafeArrays, Random, KahanSummation, LinearAlgebra
+using Shapes, ElasticArrays, Random, KahanSummation, LinearAlgebra
 
 @testset "LyceumTools.jl" begin
     @testset "stats" begin

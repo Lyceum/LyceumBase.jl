@@ -36,7 +36,7 @@ end
 @testset "nblasthreads/with_blasthreads" begin
     nt = Threads.nthreads()
     if nt > 1
-        nb = min(16, nt) # Julia's OpenBLAS allows a max of 16 threads
+        nb = min(32, nt) # Julia's OpenBLAS allows a max of 32 threads
         BLAS.set_num_threads(nb)
         @test nblasthreads() == nb
         BLAS.set_num_threads(1)

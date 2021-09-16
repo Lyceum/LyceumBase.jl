@@ -6,7 +6,7 @@ using Random
 using Shapes
 using BenchmarkTools: @benchmark
 using DocStringExtensions
-using Reexport
+#using Reexport
 
 
 
@@ -24,8 +24,8 @@ const RealVec = AbstractVector{<:Real}
 
 
 include("util.jl")
-include("setfield.jl")
-@reexport using .SetfieldImpl
+#include("setfield.jl")
+#@reexport using .SetfieldImpl
 
 
 

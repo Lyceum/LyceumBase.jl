@@ -3,7 +3,7 @@ Base.@pure function geteltype(::Type{A}) where {T,N,A<:AbstractArray{T,N}}
     SubArray{T,N,A,I,true}
 end
 
-Base.@pure geteltype(::Type{A}) where {A<:UnsafeArray} = A
+#Base.@pure geteltype(::Type{A}) where {A<:UnsafeArray} = A
 
 Base.@pure _ncolons(::Val{N}) where {N} = ntuple(_ -> Colon(), Val{N}())
 
@@ -149,8 +149,8 @@ end
 
 Base.append!(A::BatchedArray, xs) = (foreach(x -> push!(A, x), xs); A)
 
-UnsafeArrays.uview(A::BatchedArray) =
-    BatchedArray(uview(A.parent), uview(A.offsets), A.kernel_size)
+#UnsafeArrays.uview(A::BatchedArray) =
+#    BatchedArray(uview(A.parent), uview(A.offsets), A.kernel_size)
 
 nsamples(A::BatchedArray) = size(A.parent, ndims(A.parent))
 
